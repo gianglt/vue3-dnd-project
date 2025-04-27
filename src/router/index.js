@@ -1,36 +1,31 @@
-// src/router/index.js
+import { createRouter, createWebHistory } from 'vue-router'
+import HelloWorld from '../components/HelloWorld.vue'
+import DrawingCanvas from '../components/drawing/DrawingCanvas.vue'
+// Import component canvas mới
+import DrawProcessCanvas from '../components/DrawProcess/DrawProcessCanvas.vue' // Đảm bảo đường dẫn đúng
 
-import { createRouter, createWebHistory } from 'vue-router';
-
-// Import các component bạn muốn điều hướng đến
-// Đảm bảo đường dẫn import là chính xác so với vị trí file router/index.js
-import HelloWorld from '../components/HelloWorld.vue';
-import DrawingCanvas from '../components/drawing/DrawingCanvas.vue'; // <-- Đường dẫn mới
-
-// Định nghĩa các route
 const routes = [
   {
-    path: '/', // Đường dẫn gốc, thường là trang chủ
-    name: 'HelloWorld', // Tên route (tùy chọn nhưng nên có)
-    component: HelloWorld // Component sẽ hiển thị cho đường dẫn này
+    path: '/',
+    name: 'HelloWorld',
+    component: HelloWorld
   },
   {
-    path: '/draw', // Đường dẫn cho trang vẽ
+    path: '/drawing', // Route cho bản gốc
     name: 'DrawingCanvas',
     component: DrawingCanvas
   },
-  // Bạn có thể thêm các route khác ở đây
-];
+  // Thêm route mới cho DrawProcess
+  {
+    path: '/process', // Đường dẫn mới
+    name: 'DrawProcessCanvas', // Tên route mới
+    component: DrawProcessCanvas // Component mới
+  },
+]
 
-// Tạo instance router
 const router = createRouter({
-  // Sử dụng createWebHistory cho chế độ history (URL sạch, cần cấu hình server khi deploy)
-  // Hoặc createWebHashHistory cho chế độ hash (#) (hoạt động mà không cần cấu hình server)
-  history: createWebHistory(), // Hoặc sử dụng createWebHashHistory() nếu cần
-  //history: createWebHistory(import.meta.env.BASE_URL), // Dùng cho Vite
-  // history: createWebHistory(process.env.BASE_URL), // Dùng cho Vue CLI
-  routes, // Viết tắt của routes: routes
-});
+  history: createWebHistory(process.env.BASE_URL),
+  routes
+})
 
-// Export router instance để sử dụng trong main.js
-export default router;
+export default router

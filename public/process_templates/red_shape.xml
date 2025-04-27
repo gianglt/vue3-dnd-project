@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sourceItem>
+  <item schemaId="schema_red" color="#ff6b6b">
+    <formSchema>
+      <field key="Tên" type="text">Hình đỏ</field>
+      <field key="Mô tả" type="textarea">Một hình chữ nhật màu đỏ</field>
+      <field key="Giá trị" type="number">10</field>
+      <field key="Trạng thái" type="text">Hoạt động</field> <!-- Giữ là text hoặc có thể là select/boolean sau này -->
+      <field key="Ghi chú" type="textarea">Không có</field>
+      <field key="Ưu tiên" type="text">Thấp</field> <!-- Giữ là text hoặc có thể là select sau này -->
+      <field key="Ngày tạo" type="date"></field> <!-- Thêm ví dụ date -->
+      <field key="Đã duyệt" type="boolean">false</field> <!-- Thêm ví dụ boolean -->
+    </formSchema>
+  </item>
+</sourceItem>
