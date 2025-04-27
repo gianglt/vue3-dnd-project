@@ -59,12 +59,22 @@
                 <div v-if="isSchemaLoading" class="schema-loading-overlay">
                     Đang tải cấu hình...
                 </div>
+
+                <!-- Thêm nút lệnh mới -->
+                <div class="debug-controls">
+                    <button @click="showProcessStructure">Hiển thị Cấu Trúc Quy Trình</button>
+                    <button @click="showAllFormData">Hiển thị Toàn Bộ Dữ Liệu</button>
+                </div>
             </div>
         </div>
 
         <!-- Component Save/Load Controls: Nút Lưu/Tải trạng thái -->
         <DrawProcessSaveLoadControls :current-rectangles="drawnRectangles" @state-loaded="onStateLoaded"
             class="controls-container" />
+
+
+
+
 
         <!-- Modal Builder Schema (Original - Có thể giữ lại hoặc loại bỏ) -->
         <DynamicProcessEditFormModal
@@ -103,6 +113,12 @@
             @cancel="cancelDataEntry"
         />
 
+        <!-- Thêm vùng hiển thị debug -->
+        <div v-if="isDebugVisible" class="debug-output">
+            <h3>{{ debugTitle }}</h3>
+            <pre>{{ debugData }}</pre>
+            <button @click="closeDebug">Đóng</button>
+        </div>
     </div>
 </template>
 
@@ -140,6 +156,13 @@ const isRefSchemaBuilderVisible = ref(false); // State cho modal mới (Tabs/Ref
 const isDataEntryVisible = ref(false);
 const editingRect = ref(null); // Dùng chung cho cả 3 modal
 const resizeCounter = ref(0); // <--- BIẾN ĐẾM RESIZE ĐỂ CẬP NHẬT KEY
+
+
+// Thêm state mới cho debug
+const isDebugVisible = ref(false);
+const debugTitle = ref('');
+const debugData = ref('');
+
 
 // --- Computed Properties ---
 const sortedRectangles = computed(() => {
@@ -687,6 +710,30 @@ const handleDrop = async (event) => {
     console.log('[DrawProcess] handleDrop: Finished processing drop.');
 };
 
+// --- Debug Functions ---
+const showProcessStructure = () => {
+    // Clone cấu trúc quy trình để tránh ảnh hưởng đến data gốc
+    const clonedRectangles = structuredClone(drawnRectangles.value);
+    debugTitle.value = 'Cấu Trúc Quy Trình';
+    debugData.value = JSON.stringify(clonedRectangles, null, 2); // Hiển thị cấu trúc dạng JSON đẹp mắt
+    isDebugVisible.value = true;
+};
+
+const showAllFormData = () => {
+    //Clone dữ liệu formData để tránh ảnh hưởng data gốc
+    const allFormData = {};
+    drawnRectangles.value.forEach(rect => {
+        allFormData[rect.id] = structuredClone(rect.formData);
+    });
+
+    debugTitle.value = 'Toàn Bộ Dữ Liệu';
+    debugData.value = JSON.stringify(allFormData, null, 2); // Hiển thị dữ liệu dạng JSON đẹp mắt
+    isDebugVisible.value = true;
+};
+
+const closeDebug = () => {
+    isDebugVisible.value = false;
+};
 </script>
 
 <style scoped>
@@ -792,5 +839,51 @@ const handleDrop = async (event) => {
     height: 100%;
     pointer-events: none; /* SVG không bắt sự kiện chuột */
     z-index: 1; /* Nằm dưới các hình chữ nhật (có z-index: 2) */
+}
+
+.debug-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 10; /* Đảm bảo nút lệnh nổi lên trên các hình */
+}
+.debug-controls button {
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Style cho vùng hiển thị debug */
+.debug-output {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-height: 80vh;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 20px;
+    overflow: auto;
+    z-index: 20; /* Phải cao hơn debug-controls và các phần tử khác */
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+}
+
+.debug-output h3 {
+    margin-top: 0;
+}
+
+.debug-output pre {
+    white-space: pre-wrap;
+    font-family: monospace;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: #f8f8f8;
+    overflow-x: auto;
 }
 </style>
