@@ -1,5 +1,17 @@
 [
-  "red_shape.xml",
-  "teal_shape.xml",
-  "blue_shape.xml"
+  {
+    "schemaId": "schema_red",
+    "filename": "red_shape.xml",
+    "color": "#ff6b6b"
+  },
+  {
+    "schemaId": "schema_teal",
+    "filename": "teal_shape.xml",
+    "color": "#4ecdc4"
+  },
+  {
+    "schemaId": "schema_blue",
+    "filename": "blue_shape.xml",
+    "color": "#45b7d1"
+  }
 ]

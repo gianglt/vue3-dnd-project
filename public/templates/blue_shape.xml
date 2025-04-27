@@ -5,6 +5,7 @@
       <field key="ID Người dùng"></field>
       <field key="Ghi chú">Không có</field>
       <field key="Ưu tiên">Trung bình</field>
+      <field key="Trạng thái">Hoạt động</field>
     </formSchema>
   </item>
 </sourceItem>

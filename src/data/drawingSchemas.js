@@ -1,11 +1,16 @@
 // src/data/drawingSchemas.js
-import { ref } from 'vue';
+import { ref, reactive } from 'vue'; // Thêm reactive cho cache
 
-// sourceData vẫn là ref chứa kết quả cuối cùng
-export const sourceData = ref([]);
+// Ref này giờ chỉ chứa thông tin cơ bản cho palette
+export const paletteItems = ref([]);
+
+// Cache để lưu trữ các schema đã được load đầy đủ (schemaId -> { schemaId, color, formSchema })
+// Sử dụng reactive để nếu cần có thể theo dõi sự thay đổi của cache ở nơi khác
+const loadedSchemasCache = reactive({});
 
 /**
  * Helper function để parse nội dung XML của một file template duy nhất.
+ * (Giữ nguyên hàm parseSingleTemplateXML từ lần trước)
  * @param {string} xmlText Nội dung XML của file.
  * @param {string} filename Tên file (để log lỗi).
  * @returns {object | null} Đối tượng template đã parse hoặc null nếu lỗi.
@@ -18,22 +23,14 @@ const parseSingleTemplateXML = (xmlText, filename) => {
         const parserErrors = xmlDoc.getElementsByTagName("parsererror");
         if (parserErrors.length > 0) {
             console.error(`XML Parsing Error in ${filename}:`, parserErrors[0].textContent);
-            return null; // Trả về null nếu parse lỗi
+            return null;
         }
-
-        // Tìm thẻ <item> (giả sử nó là con trực tiếp của thẻ gốc <sourceItem>)
-        const itemNode = xmlDoc.querySelector("sourceItem > item"); // Điều chỉnh selector nếu cấu trúc XML khác
-        if (!itemNode) {
+        // Tìm thẻ <item> bên trong thẻ gốc <sourceItem>
+        const itemNode = xmlDoc.querySelector("sourceItem > item");
+         if (!itemNode) {
              console.warn(`Could not find <item> node within <sourceItem> in ${filename}`);
-             // Thử tìm item không cần thẻ gốc <sourceItem> nếu cấu trúc linh hoạt hơn
-             // const itemNode = xmlDoc.querySelector("item");
-             // if (!itemNode) {
-             //    console.warn(`Could not find <item> node in ${filename}`);
-             //    return null;
-             // }
              return null;
         }
-
 
         const schemaId = itemNode.getAttribute('schemaId');
         const color = itemNode.getAttribute('color');
@@ -63,6 +60,7 @@ const parseSingleTemplateXML = (xmlText, filename) => {
         }
 
         if (schemaId && color) {
+            // Trả về đối tượng đầy đủ bao gồm cả formSchema
             return { schemaId, color, formSchema };
         } else {
             console.warn(`Skipping item from ${filename} due to missing schemaId or color.`);
@@ -71,79 +69,106 @@ const parseSingleTemplateXML = (xmlText, filename) => {
 
     } catch (error) {
         console.error(`Error parsing XML from ${filename}:`, error);
-        return null; // Trả về null nếu có lỗi khác
+        return null;
     }
 };
 
-/**
- * Hàm bất đồng bộ để tải danh sách template từ manifest, sau đó tải và parse từng file XML.
- * @param {string} manifestPath Đường dẫn đến file manifest JSON (ví dụ: '/templates/manifest.json')
- * @returns {Promise<void>}
- * @throws {Error} Nếu có lỗi nghiêm trọng khi fetch manifest hoặc không load được file nào.
- */
-export const loadTemplatesFromManifest = async (manifestPath) => {
-    console.log(`Attempting to load templates using manifest: ${manifestPath}`);
-    let templateFilenames = [];
 
+/**
+ * Hàm bất đồng bộ để tải thông tin cơ bản cho palette từ manifest.
+ * @param {string} manifestPath Đường dẫn đến file manifest JSON
+ * @returns {Promise<void>}
+ * @throws {Error} Nếu có lỗi khi fetch manifest.
+ */
+export const loadPaletteData = async (manifestPath) => {
+    console.log(`Attempting to load palette data from manifest: ${manifestPath}`);
     try {
-        // 1. Fetch manifest file
         const response = await fetch(manifestPath);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status} while fetching ${manifestPath}`);
         }
-        templateFilenames = await response.json(); // Parse manifest JSON
+        const manifestData = await response.json();
 
-        if (!Array.isArray(templateFilenames)) {
+        if (!Array.isArray(manifestData)) {
             throw new Error(`Manifest file ${manifestPath} did not contain a valid JSON array.`);
         }
-        console.log('Found templates in manifest:', templateFilenames);
+
+        // Chỉ lưu thông tin cần thiết cho palette (bao gồm filename để load sau)
+        paletteItems.value = manifestData.map(item => ({
+            schemaId: item.schemaId,
+            color: item.color,
+            filename: item.filename // Quan trọng: Giữ lại filename
+        }));
+
+        console.log('Successfully loaded palette data:', paletteItems.value);
 
     } catch (error) {
         console.error("Error loading or parsing manifest file:", error);
-        sourceData.value = []; // Reset nếu không đọc được manifest
-        throw error; // Ném lỗi để component gọi biết
-    }
-
-    // 2. Tạo danh sách các promise để fetch và parse từng file XML
-    const loadPromises = templateFilenames.map(async (filename) => {
-        const xmlFilePath = `/templates/${filename}`; // Xây dựng đường dẫn đầy đủ
-        try {
-            const response = await fetch(xmlFilePath);
-            if (!response.ok) {
-                console.error(`HTTP error! status: ${response.status} while fetching ${xmlFilePath}`);
-                return null; // Trả về null nếu fetch lỗi file này
-            }
-            const xmlText = await response.text();
-            return parseSingleTemplateXML(xmlText, filename); // Parse nội dung
-        } catch (error) {
-            console.error(`Error fetching or processing ${xmlFilePath}:`, error);
-            return null; // Trả về null nếu có lỗi khác
-        }
-    });
-
-    // 3. Chờ tất cả các promise hoàn thành (dùng allSettled để không bị dừng nếu 1 file lỗi)
-    const results = await Promise.allSettled(loadPromises);
-
-    // 4. Lọc ra các kết quả thành công và cập nhật sourceData
-    const loadedItems = results
-        .filter(result => result.status === 'fulfilled' && result.value !== null) // Lấy các promise thành công và có giá trị hợp lệ
-        .map(result => result.value); // Trích xuất giá trị (đối tượng template)
-
-    sourceData.value = loadedItems;
-
-    if (loadedItems.length === 0 && templateFilenames.length > 0) {
-         console.warn("Warning: No templates were successfully loaded, although manifest listed files.");
-         // Có thể ném lỗi ở đây nếu việc không load được template nào là nghiêm trọng
-         // throw new Error("Failed to load any templates.");
-    } else if (loadedItems.length < templateFilenames.length) {
-         console.warn(`Warning: Successfully loaded ${loadedItems.length} out of ${templateFilenames.length} templates listed in manifest.`);
-    } else {
-        console.log(`Successfully loaded ${loadedItems.length} templates:`, sourceData.value);
+        paletteItems.value = []; // Reset nếu lỗi
+        throw error;
     }
 };
 
-// Helper getSchemaById không thay đổi, vẫn hoạt động trên sourceData đã được load
-export const getSchemaById = (schemaId) => {
-    const sourceItem = sourceData.value.find(item => item.schemaId === schemaId);
-    return sourceItem ? { ...sourceItem.formSchema } : {};
+/**
+ * Hàm bất đồng bộ để lấy hoặc tải cấu hình đầy đủ (bao gồm formSchema) của một schemaId.
+ * Sẽ kiểm tra cache trước, nếu không có sẽ tải và parse file XML tương ứng.
+ * @param {string} schemaId ID của schema cần lấy/load.
+ * @returns {Promise<object | null>} Promise trả về đối tượng formSchema hoặc null nếu lỗi/không tìm thấy.
+ */
+export const getOrLoadFormSchema = async (schemaId) => {
+    // 1. Kiểm tra cache trước
+    if (loadedSchemasCache[schemaId]) {
+        console.log(`Schema ${schemaId} found in cache.`);
+        // Trả về formSchema từ cache
+        return loadedSchemasCache[schemaId].formSchema;
+    }
+
+    // 2. Nếu không có trong cache, tìm thông tin file trong paletteItems
+    const itemInfo = paletteItems.value.find(p => p.schemaId === schemaId);
+    if (!itemInfo || !itemInfo.filename) {
+        console.error(`Schema info or filename not found for schemaId: ${schemaId} in paletteItems.`);
+        return null; // Không tìm thấy thông tin để load
+    }
+
+    // 3. Tải file XML cụ thể
+    const xmlFilePath = `/templates/${itemInfo.filename}`;
+    console.log(`Schema ${schemaId} not in cache. Loading from ${xmlFilePath}...`);
+    try {
+        const response = await fetch(xmlFilePath);
+        if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status} while fetching ${xmlFilePath}`);
+            return null; // Lỗi fetch
+        }
+        const xmlText = await response.text();
+
+        // 4. Parse XML
+        const fullSchemaData = parseSingleTemplateXML(xmlText, itemInfo.filename);
+
+        if (fullSchemaData && fullSchemaData.formSchema) {
+            // 5. Lưu vào cache
+            loadedSchemasCache[schemaId] = fullSchemaData;
+            console.log(`Schema ${schemaId} loaded and cached.`);
+            // 6. Trả về formSchema
+            return fullSchemaData.formSchema;
+        } else {
+            console.error(`Failed to parse valid schema data from ${xmlFilePath}`);
+            return null; // Lỗi parse hoặc dữ liệu không hợp lệ
+        }
+    } catch (error) {
+        console.error(`Error fetching or processing ${xmlFilePath}:`, error);
+        return null; // Lỗi mạng hoặc lỗi khác
+    }
+};
+
+/**
+ * Helper để lấy formSchema đã được load (chỉ từ cache).
+ * Dùng cho EditFormModal, giả định schema đã được load khi hình chữ nhật được tạo.
+ * @param {string} schemaId
+ * @returns {object} formSchema hoặc {} nếu không có trong cache.
+ */
+export const getCachedSchemaById = (schemaId) => {
+    // Chỉ lấy từ cache, không trigger load mới ở đây
+    const cachedData = loadedSchemasCache[schemaId];
+    // Trả về một bản sao để tránh sửa đổi trực tiếp schema gốc trong cache
+    return cachedData ? { ...cachedData.formSchema } : {};
 };

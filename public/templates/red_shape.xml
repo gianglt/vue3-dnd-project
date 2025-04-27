@@ -5,6 +5,9 @@
       <field key="Tên">Hình đỏ</field>
       <field key="Mô tả">Một hình chữ nhật màu đỏ</field>
       <field key="Giá trị" type="number">10</field>
+      <field key="Trạng thái">Hoạt động</field>
+      <field key="Ghi chú">Không có</field>
+      <field key="Ưu tiên">Thấp</field>
     </formSchema>
   </item>
 </sourceItem>
