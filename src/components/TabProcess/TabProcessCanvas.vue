@@ -327,8 +327,15 @@ const showProcessStructure = () => {
 const showAllFormData = () => {
     const allFormData = {};
     processStore.drawnRectangles.forEach(rect => {
-        // Clone ở đây hoặc trong action setDebugInfo nếu cần
-        allFormData[rect.id] = structuredClone(rect.formData);
+        try {
+            // Use JSON stringify/parse for safe cloning for debug display
+            // Add || {} to handle potential null/undefined formData
+            allFormData[rect.id] = JSON.parse(JSON.stringify(rect.formData || {}));
+        } catch (e) {
+            console.error(`[Canvas] Error cloning/stringifying formData for rect ID ${rect.id}:`, e);
+            // Assign an error message or empty object for this specific rect in the debug output
+            allFormData[rect.id] = { error: `Could not serialize formData: ${e.message}` };
+        }
     });
     processStore.setDebugInfo('Toàn Bộ Dữ Liệu', allFormData);
 };
