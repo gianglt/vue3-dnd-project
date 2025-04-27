@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sourceItem>
+  <item schemaId="schema_teal" color="#4ecdc4">
+    <formSchema>
+      <field key="Đối tượng">Khối Teal</field>
+      <field key="Trạng thái">Hoạt động</field>
+    </formSchema>
+  </item>
+</sourceItem>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sourceItem> <!-- Chỉ cần thẻ gốc cho item này -->
+  <item schemaId="schema_red" color="#ff6b6b">
+    <formSchema>
+      <field key="Tên">Hình đỏ</field>
+      <field key="Mô tả">Một hình chữ nhật màu đỏ</field>
+      <field key="Giá trị" type="number">10</field>
+    </formSchema>
+  </item>
+</sourceItem>

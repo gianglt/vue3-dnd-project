@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sourceItems>
+  <item schemaId="schema_red" color="#ff6b6b">
+    <formSchema>
+      <field key="Tên">Hình đỏ</field>
+      <field key="Mô tả">Một hình chữ nhật màu đỏ</field>
+      <!-- Thêm type="number" nếu muốn xử lý kiểu dữ liệu khi parse -->
+      <field key="Giá trị" type="number">10</field>
+    </formSchema>
+  </item>
+  <item schemaId="schema_teal" color="#4ecdc4">
+    <formSchema>
+      <field key="Đối tượng">Khối Teal</field>
+      <field key="Trạng thái">Hoạt động</field>
+    </formSchema>
+  </item>
+  <item schemaId="schema_blue" color="#45b7d1">
+    <formSchema>
+      <field key="ID Người dùng"></field> <!-- Để trống giá trị -->
+      <field key="Ghi chú">Không có</field>
+      <field key="Ưu tiên">Trung bình</field>
+    </formSchema>
+  </item>
+</sourceItems>

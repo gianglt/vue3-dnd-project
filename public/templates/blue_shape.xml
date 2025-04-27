@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sourceItem>
+  <item schemaId="schema_blue" color="#45b7d1">
+    <formSchema>
+      <field key="ID Người dùng"></field>
+      <field key="Ghi chú">Không có</field>
+      <field key="Ưu tiên">Trung bình</field>
+    </formSchema>
+  </item>
+</sourceItem>

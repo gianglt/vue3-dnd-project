@@ -3,8 +3,9 @@
         <!-- Palette -->
         <div class="palette">
             <h3>Kéo từ đây:</h3>
-            <div v-for="item in sourceData" :key="item.schemaId" class="source-rect" :style="{ backgroundColor: item.color }"
-                draggable="true" @dragstart="handleSourceDragStart($event, item)"></div>
+            <div v-for="item in sourceData" :key="item.schemaId" class="source-rect"
+                :style="{ backgroundColor: item.color }" draggable="true"
+                @dragstart="handleSourceDragStart($event, item)"></div>
         </div>
 
         <!-- Canvas -->
@@ -15,12 +16,8 @@
             <svg class="connection-lines">
                 <defs>
                     <!-- Định nghĩa marker mũi tên -->
-                    <marker
-                        id="arrowhead"
-                        markerWidth="8"  markerHeight="6"
-                        refX="8" refY="3"  
-                        orient="auto-start-reverse" 
-                        markerUnits="strokeWidth">
+                    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3"
+                        orient="auto-start-reverse" markerUnits="strokeWidth">
                         <!-- Hình dạng mũi tên (tam giác) - giữ nguyên -->
                         <path d="M0,0 L8,3 L0,6 Z" fill="#555" />
                     </marker>
@@ -31,51 +28,26 @@
                     <!-- Lặp qua các cặp hình chữ nhật liền kề theo thứ tự -->
                     <template v-for="(rect, index) in sortedRectangles" :key="rect.id + '-elbow'">
                         <template v-if="index < sortedRectangles.length - 1">
-                            <polyline
-                                :points="calculateElbowPoints(rect, sortedRectangles[index + 1])"
-                                fill="none"
-                                stroke="#555"
-                                stroke-width="1.5"
-                                stroke-dasharray="4, 4"
-                                marker-end="url(#arrowhead)"
-
-                            />
+                            <polyline :points="calculateElbowPoints(rect, sortedRectangles[index + 1])" fill="none"
+                                stroke="#555" stroke-width="1.5" stroke-dasharray="4, 4" marker-end="url(#arrowhead)" />
                         </template>
                     </template>
                 </g>
             </svg>
 
             <!-- Component DrawnRectangle -->
-            <DrawnRectangle
-                v-for="rect in drawnRectangles"
-                :key="rect.id"
-                :rect="rect"
-                :prevent-drag="isModalVisible"
-                @dragstart.stop="handleRectDragStart($event, rect)"
-                @dragend="handleRectDragEnd"
-                @contextmenu="showContextMenu($event, rect)"
-                @open-edit="openEditModal"
-            />
+            <DrawnRectangle v-for="rect in drawnRectangles" :key="rect.id" :rect="rect" :prevent-drag="isModalVisible"
+                @dragstart.stop="handleRectDragStart($event, rect)" @dragend="handleRectDragEnd"
+                @contextmenu="showContextMenu($event, rect)" @open-edit="openEditModal" />
         </div>
 
         <!-- Component ContextMenu -->
-        <ContextMenu
-            :visible="contextMenu.visible"
-            :top="contextMenu.top"
-            :left="contextMenu.left"
-            @edit="handleEdit"
-            @delete="handleDelete"
-            ref="contextMenuRef"
-        />
+        <ContextMenu :visible="contextMenu.visible" :top="contextMenu.top" :left="contextMenu.left" @edit="handleEdit"
+            @delete="handleDelete" ref="contextMenuRef" />
 
         <!-- Component EditFormModal -->
-        <EditFormModal
-            :visible="isModalVisible"
-            :rect-data="editingRect"
-            :schema="getSchemaForRect(editingRect)"
-            @save="saveForm"
-            @cancel="cancelForm"
-        />
+        <EditFormModal :visible="isModalVisible" :rect-data="editingRect" :schema="getSchemaForRect(editingRect)"
+            @save="saveForm" @cancel="cancelForm" />
     </div>
 </template>
 
@@ -86,8 +58,14 @@ import { debounce } from 'lodash-es';
 import DrawnRectangle from './DrawnRectangle.vue';
 import ContextMenu from './ContextMenu.vue';
 import EditFormModal from './EditFormModal.vue';
-import { sourceData, getSchemaById } from '../../data/drawingSchemas.js';
+import { sourceData, getSchemaById, loadTemplatesFromManifest } from '../../data/drawingSchemas.js';
+
 import { RECT_ID_DATA_TYPE, DRAG_OFFSET_DATA_TYPE, SOURCE_ITEM_DATA_TYPE } from '../../types/drawingTypes.js';
+
+
+// Thêm state cho trạng thái loading và lỗi
+const isLoading = ref(true);
+const loadError = ref(false);
 
 // --- State ---
 const drawnRectangles = ref([]);
@@ -165,7 +143,19 @@ const handleWindowChange = debounce(() => {
 }, 150);
 
 // --- Lifecycle Hooks ---
-onMounted(() => {
+onMounted(async () => {
+
+    try {
+        // Gọi hàm load mới với đường dẫn tới manifest
+        await loadTemplatesFromManifest('/templates/manifest.json');
+        loadError.value = false;
+    } catch (error) {
+        console.error("Failed to initialize DrawingCanvas due to template loading error:", error);
+        loadError.value = true;
+    } finally {
+        isLoading.value = false;
+    }
+
     window.addEventListener('click', handleClickOutside);
     window.addEventListener('resize', handleWindowChange);
     window.addEventListener('scroll', handleWindowChange, true);
@@ -289,8 +279,8 @@ const handleRectDragStart = (event, rect) => {
         draggingRectId.value = rect.id;
         // console.log(`Bắt đầu kéo hình ID: ${rect.id} với offset:`, offsetData);
     } catch (e) {
-         console.error("Rect Drag Start Error:", e);
-         event.preventDefault();
+        console.error("Rect Drag Start Error:", e);
+        event.preventDefault();
     }
 };
 
@@ -306,7 +296,7 @@ const handleDragOver = (event) => {
     } else if (event.dataTransfer.types.includes(SOURCE_ITEM_DATA_TYPE)) {
         event.dataTransfer.dropEffect = "copy";
     } else {
-         event.dataTransfer.dropEffect = "none";
+        event.dataTransfer.dropEffect = "none";
     }
 };
 
@@ -362,13 +352,83 @@ const handleDrop = (event) => {
 </script>
 
 <style scoped>
+/* Thêm style cho loading/error nếu muốn */
+.loading-indicator,
+.error-message {
+    padding: 2rem;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+}
+
 /* CSS không đổi */
-.drawing-app { display: flex; gap: 2rem; font-family: sans-serif; }
-.palette { border: 1px solid #ccc; padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; background-color: #f8f8f8; height: fit-content; }
-.palette h3 { margin: 0 0 0.5rem 0; font-size: 0.9em; color: #555; }
-.source-rect { width: 50px; height: 50px; border: 1px solid #eee; cursor: grab; transition: transform 0.2s ease; }
-.source-rect:active { cursor: grabbing; transform: scale(1.1); }
-.canvas { border: 2px dashed #007bff; width: 100%; height: 500px; position: relative; background-color: #e9ecef; overflow: hidden; }
-.canvas h3 { position: absolute; top: 5px; left: 10px; margin: 0; font-size: 0.9em; color: #6c757d; pointer-events: none; }
-.connection-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.drawing-app {
+    display: flex;
+    gap: 2rem;
+    font-family: sans-serif;
+}
+
+.palette {
+    border: 1px solid #ccc;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #f8f8f8;
+    height: fit-content;
+}
+
+.palette h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.source-rect {
+    width: 50px;
+    height: 50px;
+    border: 1px solid #eee;
+    cursor: grab;
+    transition: transform 0.2s ease;
+}
+
+.source-rect:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+}
+
+.canvas {
+    border: 2px dashed #007bff;
+    width: 100%;
+    height: 500px;
+    position: relative;
+    background-color: #e9ecef;
+    overflow: hidden;
+}
+
+.canvas h3 {
+    position: absolute;
+    top: 5px;
+    left: 10px;
+    margin: 0;
+    font-size: 0.9em;
+    color: #6c757d;
+    pointer-events: none;
+}
+
+.connection-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
 </style>
