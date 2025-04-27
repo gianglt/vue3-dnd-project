@@ -151,7 +151,7 @@ const processStore = useProcessStore();
 const canvasRef = ref(null); // Vẫn cần để lấy kích thước canvas
 const contextMenuRef = ref(null); // Vẫn cần để kiểm tra click outside
 const draggingRectId = ref(null); // State tạm thời khi kéo thả
-const defaultRectWidth = 50; // Có thể chuyển thành hằng số hoặc vào store nếu muốn cấu hình
+const defaultRectWidth = 150; // Có thể chuyển thành hằng số hoặc vào store nếu muốn cấu hình
 const defaultRectHeight = 50;
 
 // --- Logic Tính toán (chỉ giữ lại những gì không thuộc về store) ---
