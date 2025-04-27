@@ -1,11 +1,14 @@
 <template>
     <ul v-if="visible" class="context-menu" :style="{ top: top + 'px', left: left + 'px' }">
-        <!-- Thêm option mới -->
         <li @click="emitEnterData">
             <i class="fas fa-keyboard"></i> Nhập dữ liệu
         </li>
         <li @click="emitEdit">
             <i class="fas fa-pencil-alt"></i> Chỉnh sửa Schema
+        </li>
+        <!-- NEW: Option for Reference Schema Editor -->
+        <li @click="emitEditRefSchema">
+            <i class="fas fa-cogs"></i> Chỉnh sửa Schema (Ref)
         </li>
         <li @click="emitDelete" class="delete-option">
             <i class="fas fa-trash-alt"></i> Xóa bước
@@ -22,13 +25,14 @@ defineProps({
     left: Number
 });
 
-// Thêm 'enterData' vào emits
-const emit = defineEmits(['edit', 'delete', 'enterData']);
+// Add 'editRefSchema' to emits
+const emit = defineEmits(['edit', 'delete', 'enterData', 'editRefSchema']);
 
 const emitEdit = () => emit('edit');
 const emitDelete = () => emit('delete');
-// Method mới để emit sự kiện 'enterData'
 const emitEnterData = () => emit('enterData');
+// NEW: Method to emit 'editRefSchema' event
+const emitEditRefSchema = () => emit('editRefSchema');
 
 </script>
 
@@ -44,17 +48,17 @@ const emitEnterData = () => emit('enterData');
     list-style: none;
     padding: 8px 0;
     margin: 0;
-    z-index: 100; /* Đảm bảo menu nổi lên trên */
-    min-width: 180px; /* Tăng chiều rộng để chứa icon và text */
+    z-index: 100;
+    min-width: 200px; /* Adjust width if needed */
     border-radius: 4px;
 }
 
 .context-menu li {
     padding: 8px 15px;
     cursor: pointer;
-    display: flex; /* Sử dụng flexbox để căn chỉnh icon và text */
-    align-items: center; /* Căn giữa theo chiều dọc */
-    gap: 8px; /* Khoảng cách giữa icon và text */
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 0.9em;
     color: #333;
 }
@@ -64,22 +68,22 @@ const emitEnterData = () => emit('enterData');
 }
 
 .context-menu li i {
-    width: 16px; /* Đảm bảo icon có không gian cố định */
+    width: 16px;
     text-align: center;
-    color: #555; /* Màu icon */
+    color: #555;
 }
 
 
 .context-menu .delete-option {
-    color: #dc3545; /* Màu đỏ cho tùy chọn xóa */
-    border-top: 1px solid #eee; /* Thêm đường kẻ phân cách */
+    color: #dc3545;
+    border-top: 1px solid #eee;
     margin-top: 5px;
     padding-top: 8px;
 }
 .context-menu .delete-option:hover {
-    background-color: #f8d7da; /* Màu nền đỏ nhạt khi hover */
+    background-color: #f8d7da;
 }
 .context-menu .delete-option i {
-    color: #dc3545; /* Màu icon đỏ */
+    color: #dc3545;
 }
 </style>

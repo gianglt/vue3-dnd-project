@@ -1,0 +1,5 @@
+[
+  { "id": "doc_type_inv", "name": "Hóa đơn" },
+  { "id": "doc_type_po", "name": "Đơn đặt hàng" },
+  { "id": "doc_type_ctr", "name": "Hợp đồng" }
+]

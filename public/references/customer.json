@@ -1,0 +1,41 @@
+[
+    {
+      "customer_id": "CUS001",
+      "first_name": "Nguyễn",
+      "last_name": "Văn An",
+      "email": "an.nguyen@example.com",
+      "phone_number": "0901234567",
+      "address": {
+        "street": "10 Trần Hưng Đạo",
+        "city": "Đà Nẵng",
+        "country": "Việt Nam"
+      },
+      "registration_date": "2024-05-15"
+    },
+    {
+      "customer_id": "CUS002",
+      "first_name": "Lê",
+      "last_name": "Thị Bình",
+      "email": "binh.le@sample.org",
+      "phone_number": "0938765432",
+      "address": {
+        "street": "25 Nguyễn Văn Linh",
+        "city": "Hà Nội",
+        "country": "Việt Nam"
+      },
+      "registration_date": "2024-06-20"
+    },
+    {
+      "customer_id": "CUS003",
+      "first_name": "Trần",
+      "last_name": "Minh Châu",
+      "email": "chau.tran@test.net",
+      "phone_number": "0919876543",
+      "address": {
+        "street": "5 Lê Lợi",
+        "city": "Hồ Chí Minh",
+        "country": "Việt Nam"
+      },
+      "registration_date": "2024-07-01"
+    }
+  ]
