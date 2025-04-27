@@ -1,61 +1,85 @@
 <template>
-    <div v-if="visible" class="context-menu" :style="menuStyle">
-        <ul>
-            <li @click="handleEdit">Chỉnh sửa</li>
-            <li @click="handleDelete">Xóa</li>
-        </ul>
-    </div>
+    <ul v-if="visible" class="context-menu" :style="{ top: top + 'px', left: left + 'px' }">
+        <!-- Thêm option mới -->
+        <li @click="emitEnterData">
+            <i class="fas fa-keyboard"></i> Nhập dữ liệu
+        </li>
+        <li @click="emitEdit">
+            <i class="fas fa-pencil-alt"></i> Chỉnh sửa Schema
+        </li>
+        <li @click="emitDelete" class="delete-option">
+            <i class="fas fa-trash-alt"></i> Xóa bước
+        </li>
+    </ul>
 </template>
 
 <script setup>
-import { computed, defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits } from 'vue';
 
-const props = defineProps({
+defineProps({
     visible: Boolean,
     top: Number,
     left: Number
 });
 
-const emit = defineEmits(['edit', 'delete']);
+// Thêm 'enterData' vào emits
+const emit = defineEmits(['edit', 'delete', 'enterData']);
 
-const menuStyle = computed(() => ({
-    top: `${props.top}px`,
-    left: `${props.left}px`,
-}));
+const emitEdit = () => emit('edit');
+const emitDelete = () => emit('delete');
+// Method mới để emit sự kiện 'enterData'
+const emitEnterData = () => emit('enterData');
 
-const handleEdit = () => {
-    emit('edit');
-};
-
-const handleDelete = () => {
-    emit('delete');
-};
 </script>
 
 <style scoped>
+/* Thêm icon nếu muốn (cần Font Awesome hoặc tương tự) */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
 .context-menu {
-    position: fixed; /* Hoặc absolute tùy vào container cha */
-    background-color: #fff;
+    position: fixed;
+    background-color: white;
     border: 1px solid #ccc;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.15);
-    border-radius: 4px;
-    z-index: 1001; /* Cao hơn modal overlay */
-    min-width: 100px;
-}
-
-.context-menu ul {
     list-style: none;
-    padding: 5px 0;
+    padding: 8px 0;
     margin: 0;
+    z-index: 100; /* Đảm bảo menu nổi lên trên */
+    min-width: 180px; /* Tăng chiều rộng để chứa icon và text */
+    border-radius: 4px;
 }
 
 .context-menu li {
     padding: 8px 15px;
     cursor: pointer;
-    font-size: 0.9rem;
+    display: flex; /* Sử dụng flexbox để căn chỉnh icon và text */
+    align-items: center; /* Căn giữa theo chiều dọc */
+    gap: 8px; /* Khoảng cách giữa icon và text */
+    font-size: 0.9em;
+    color: #333;
 }
 
 .context-menu li:hover {
     background-color: #f0f0f0;
+}
+
+.context-menu li i {
+    width: 16px; /* Đảm bảo icon có không gian cố định */
+    text-align: center;
+    color: #555; /* Màu icon */
+}
+
+
+.context-menu .delete-option {
+    color: #dc3545; /* Màu đỏ cho tùy chọn xóa */
+    border-top: 1px solid #eee; /* Thêm đường kẻ phân cách */
+    margin-top: 5px;
+    padding-top: 8px;
+}
+.context-menu .delete-option:hover {
+    background-color: #f8d7da; /* Màu nền đỏ nhạt khi hover */
+}
+.context-menu .delete-option i {
+    color: #dc3545; /* Màu icon đỏ */
 }
 </style>
