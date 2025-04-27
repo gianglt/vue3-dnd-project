@@ -8,7 +8,7 @@
     
     @contextmenu="$emit('contextmenu', $event)"
     @dblclick="!preventDrag ? $emit('open-edit', rect) : null"
-    @mousemove="handleMouseMove" 
+    
   >
     <!-- Nội dung của hình chữ nhật -->
     {{ rect.id }} <!-- Ví dụ hiển thị ID -->
@@ -57,15 +57,15 @@ const style = computed(() => ({
   boxSizing: 'border-box',
 }));
 
-// --- HÀM MỚI: Xử lý sự kiện mousemove ---
-const handleMouseMove = (event) => {
-  // In ra console tọa độ chuột liên quan đến viewport và phần tử
-  console.log(
-    `[TabRectangle] Mouse move over Rect ID: ${props.rect.id} | ` +
-    `Viewport Coords (clientX, clientY): (${event.clientX}, ${event.clientY}) | ` +
-    `Element Offset (offsetX, offsetY): (${event.offsetX}, ${event.offsetY})`
-  );
-};
+// // --- HÀM MỚI: Xử lý sự kiện mousemove ---
+// const handleMouseMove = (event) => {
+//   // In ra console tọa độ chuột liên quan đến viewport và phần tử
+//   console.log(
+//     `[TabRectangle] Mouse move over Rect ID: ${props.rect.id} | ` +
+//     `Viewport Coords (clientX, clientY): (${event.clientX}, ${event.clientY}) | ` +
+//     `Element Offset (offsetX, offsetY): (${event.offsetX}, ${event.offsetY})`
+//   );
+// };
 
 // Hàm logClick (nếu bạn đã thêm từ bước trước)
 // const logClick = () => {

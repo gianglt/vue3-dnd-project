@@ -66,13 +66,15 @@ export const useProcessStore = defineStore('process', {
             const rect = this.editingRect; // Dùng getter editingRect
             const schema = rect?.formSchemaDefinition;
             if (schema && typeof schema === 'object') {
-                try {
-                    // structuredClone là cách tốt nhất để deep clone
-                    return structuredClone(schema);
-                } catch (e) {
-                    console.warn("[ProcessStore] Using JSON fallback for cloning initial schema.");
-                    return JSON.parse(JSON.stringify(schema));
-                }
+                // try {
+                //     // structuredClone là cách tốt nhất để deep clone
+                //     return structuredClone(schema);
+                // } catch (e) {
+                //     console.warn("[ProcessStore] Using JSON fallback for cloning initial schema.");
+                //     return JSON.parse(JSON.stringify(schema));
+                // }
+
+                return JSON.parse(JSON.stringify(schema));
             }
             return { tabs: [] }; // Mặc định cấu trúc tabs rỗng
         },
@@ -114,12 +116,12 @@ export const useProcessStore = defineStore('process', {
                 ...rect,
                 // Đảm bảo formSchemaDefinition là object hợp lệ
                 formSchemaDefinition: rect.formSchemaDefinition && typeof rect.formSchemaDefinition === 'object'
-                                        ? structuredClone(rect.formSchemaDefinition) // Clone để tránh tham chiếu
-                                        : { tabs: [] },
+                    ? structuredClone(rect.formSchemaDefinition) // Clone để tránh tham chiếu
+                    : { tabs: [] },
                 // Đảm bảo formData là object hợp lệ
                 formData: rect.formData && typeof rect.formData === 'object'
-                            ? structuredClone(rect.formData) // Clone
-                            : {}
+                    ? structuredClone(rect.formData) // Clone
+                    : {}
             }));
             // Tính toán lại currentOrder
             this.currentOrder = this.drawnRectangles.length > 0
@@ -177,14 +179,17 @@ export const useProcessStore = defineStore('process', {
 
             // Clone data và schema
             let clonedFlatData, clonedSchemaDefinition;
-            try {
-                clonedFlatData = structuredClone(initialFlatFormData);
-                clonedSchemaDefinition = structuredClone(formSchemaDefinitionFromXml);
-            } catch (e) {
-                clonedFlatData = JSON.parse(JSON.stringify(initialFlatFormData));
-                clonedSchemaDefinition = JSON.parse(JSON.stringify(formSchemaDefinitionFromXml));
-                console.warn("[ProcessStore] Used JSON fallback for cloning initial data/schema.");
-            }
+            // try {
+            //     clonedFlatData = structuredClone(initialFlatFormData);
+            //     clonedSchemaDefinition = structuredClone(formSchemaDefinitionFromXml);
+            // } catch (e) {
+            //     clonedFlatData = JSON.parse(JSON.stringify(initialFlatFormData));
+            //     clonedSchemaDefinition = JSON.parse(JSON.stringify(formSchemaDefinitionFromXml));
+            //     console.warn("[ProcessStore] Used JSON fallback for cloning initial data/schema.");
+            // }
+
+            clonedFlatData = JSON.parse(JSON.stringify(initialFlatFormData));
+            clonedSchemaDefinition = JSON.parse(JSON.stringify(formSchemaDefinitionFromXml));
 
             // Tạo rect mới và thêm vào state
             const newRect = {
@@ -294,16 +299,18 @@ export const useProcessStore = defineStore('process', {
             }
             const rectIndex = this.drawnRectangles.findIndex(r => r.id === this.editingRectId);
             if (rectIndex !== -1) {
-                try {
-                    this.drawnRectangles[rectIndex].formSchemaDefinition = structuredClone(newSchemaDefinition);
-                } catch (e) {
-                    this.drawnRectangles[rectIndex].formSchemaDefinition = JSON.parse(JSON.stringify(newSchemaDefinition));
-                    console.warn("[ProcessStore] Used JSON fallback to save schema definition.");
-                }
+                // try {
+                //     this.drawnRectangles[rectIndex].formSchemaDefinition = structuredClone(newSchemaDefinition);
+                // } catch (e) {
+                //     this.drawnRectangles[rectIndex].formSchemaDefinition = JSON.parse(JSON.stringify(newSchemaDefinition));
+                //     console.warn("[ProcessStore] Used JSON fallback to save schema definition.");
+                // }
+
+                this.drawnRectangles[rectIndex].formSchemaDefinition = JSON.parse(JSON.stringify(newSchemaDefinition));
 
                 // Reset formData phẳng dựa trên schema mới
                 const newFlatFormData = {};
-                 if (Array.isArray(newSchemaDefinition.tabs)) {
+                if (Array.isArray(newSchemaDefinition.tabs)) {
                     newSchemaDefinition.tabs.forEach(tab => {
                         if (tab.fields && typeof tab.fields === 'object') {
                             for (const key in tab.fields) {
@@ -314,14 +321,15 @@ export const useProcessStore = defineStore('process', {
                             }
                         }
                     });
-                 } // Thêm else if cho schema phẳng nếu cần
+                } // Thêm else if cho schema phẳng nếu cần
 
-                try {
-                    this.drawnRectangles[rectIndex].formData = structuredClone(newFlatFormData);
-                } catch (e) {
-                    this.drawnRectangles[rectIndex].formData = JSON.parse(JSON.stringify(newFlatFormData));
-                    console.warn("[ProcessStore] Used JSON fallback to reset flat formData.");
-                }
+                // try {
+                //     this.drawnRectangles[rectIndex].formData = structuredClone(newFlatFormData);
+                // } catch (e) {
+                //     this.drawnRectangles[rectIndex].formData = JSON.parse(JSON.stringify(newFlatFormData));
+                //     console.warn("[ProcessStore] Used JSON fallback to reset flat formData.");
+                // }
+                this.drawnRectangles[rectIndex].formData = JSON.parse(JSON.stringify(newFlatFormData));
                 console.log(`[ProcessStore] Updated schema and reset formData for rect ID: ${this.editingRectId}`);
             } else {
                 console.error(`[ProcessStore] Cannot find rect with ID ${this.editingRectId} to save schema.`);
@@ -332,22 +340,24 @@ export const useProcessStore = defineStore('process', {
         // Lưu data từ modal nhập liệu
         saveData(newFlatData) {
             console.log('[ProcessStore] Saving form data (flat):', newFlatData);
-             if (!this.editingRectId) {
+            if (!this.editingRectId) {
                 console.error("[ProcessStore] Cannot save data, no editingRectId set.");
                 this.closeAllModals();
                 return;
             }
             const rectIndex = this.drawnRectangles.findIndex(r => r.id === this.editingRectId);
             if (rectIndex !== -1) {
-                 try {
-                    this.drawnRectangles[rectIndex].formData = structuredClone(newFlatData);
-                } catch (e) {
-                    this.drawnRectangles[rectIndex].formData = JSON.parse(JSON.stringify(newFlatData));
-                    console.warn("[ProcessStore] Used JSON fallback to save form data.");
-                }
+                //  try {
+                //     this.drawnRectangles[rectIndex].formData = structuredClone(newFlatData);
+                // } catch (e) {
+                //     this.drawnRectangles[rectIndex].formData = JSON.parse(JSON.stringify(newFlatData));
+                //     console.warn("[ProcessStore] Used JSON fallback to save form data.");
+                // }
+
+                this.drawnRectangles[rectIndex].formData = JSON.parse(JSON.stringify(newFlatData));
                 console.log(`[ProcessStore] Updated flat formData for rect ID: ${this.editingRectId}`);
             } else {
-                 console.error(`[ProcessStore] Cannot find rect with ID ${this.editingRectId} to save data.`);
+                console.error(`[ProcessStore] Cannot find rect with ID ${this.editingRectId} to save data.`);
             }
             this.closeAllModals();
         },
