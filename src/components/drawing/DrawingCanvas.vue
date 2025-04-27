@@ -1,4 +1,3 @@
-// src/components/drawing/DrawingCanvas.vue
 <template>
     <div class="drawing-app">
         <!-- Palette -->
@@ -14,6 +13,20 @@
 
             <!-- SVG Layer cho đường nối gấp khúc -->
             <svg class="connection-lines">
+                <defs>
+                    <!-- Định nghĩa marker mũi tên -->
+                    <marker
+                        id="arrowhead"
+                        markerWidth="8"  markerHeight="6"
+                        refX="8" refY="3"  
+                        orient="auto-start-reverse" 
+                        markerUnits="strokeWidth">
+                        <!-- Hình dạng mũi tên (tam giác) - giữ nguyên -->
+                        <path d="M0,0 L8,3 L0,6 Z" fill="#555" />
+                    </marker>
+                    <!-- Alternative marker if needed for start -->
+                    <!-- <marker id="arrowtail" ... /> -->
+                </defs>
                 <g>
                     <!-- Lặp qua các cặp hình chữ nhật liền kề theo thứ tự -->
                     <template v-for="(rect, index) in sortedRectangles" :key="rect.id + '-elbow'">
@@ -24,6 +37,8 @@
                                 stroke="#555"
                                 stroke-width="1.5"
                                 stroke-dasharray="4, 4"
+                                marker-end="url(#arrowhead)"
+
                             />
                         </template>
                     </template>
@@ -67,10 +82,10 @@
 <script setup>
 /* eslint-disable */
 import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { debounce } from 'lodash-es';
 import DrawnRectangle from './DrawnRectangle.vue';
 import ContextMenu from './ContextMenu.vue';
 import EditFormModal from './EditFormModal.vue';
-// Đảm bảo đường dẫn import đúng với cấu trúc thư mục của bạn
 import { sourceData, getSchemaById } from '../../data/drawingSchemas.js';
 import { RECT_ID_DATA_TYPE, DRAG_OFFSET_DATA_TYPE, SOURCE_ITEM_DATA_TYPE } from '../../types/drawingTypes.js';
 
@@ -88,35 +103,66 @@ const editingRect = ref(null);
 
 // --- Computed ---
 const sortedRectangles = computed(() => {
-    console.log('Drawn Rectangles:', drawnRectangles.value); // Xem dữ liệu gốc
-    const sorted = drawnRectangles.value.slice().sort((a, b) => a.order - b.order);
-    console.log('Sorted Rectangles for Lines:', sorted); // Xem mảng đã sắp xếp
-    return sorted;
+    return drawnRectangles.value.slice().sort((a, b) => a.order - b.order);
 });
-
 
 // --- Helpers ---
 const getSchemaForRect = (rect) => {
     return rect ? getSchemaById(rect.schemaId) : {};
 };
 
+// --- UPDATED calculateElbowPoints ---
 const calculateElbowPoints = (rectA, rectB) => {
-    console.log('Calculating points for:', rectA?.order, '->', rectB?.order); // Thêm log
     if (!rectA || !rectB) {
-         console.warn('calculateElbowPoints: Missing rectA or rectB'); // Thêm log cảnh báo
-         return "";
+        return "";
     }
-    const startX = rectA.x + rectA.width;
-    const startY = rectA.y + rectA.height / 2;
-    const endX = rectB.x;
-    const endY = rectB.y + rectB.height / 2;
-    const cornerX = startX;
-    const cornerY = endY;
-    const pointsStr = `${startX},${startY} ${cornerX},${cornerY} ${endX},${endY}`;
-    console.log('Calculated points string:', pointsStr); // Thêm log kết quả
+
+    let startX, endX;
+    const startY = rectA.y + rectA.height / 2; // Vertical center of A
+    const endY = rectB.y + rectB.height / 2;   // Vertical center of B
+
+    // Determine start and end edges based on relative horizontal position
+    if (rectB.x >= rectA.x + rectA.width) {
+        // Target is clearly to the RIGHT of source
+        startX = rectA.x + rectA.width; // Start from right edge of A
+        endX = rectB.x;                 // End at left edge of B
+        console.log(`Points ${rectA.order}->${rectB.order}: RIGHT connection`);
+    } else if (rectB.x + rectB.width <= rectA.x) {
+        // Target is clearly to the LEFT of source
+        startX = rectA.x;                 // Start from left edge of A
+        endX = rectB.x + rectB.width;   // End at right edge of B
+        console.log(`Points ${rectA.order}->${rectB.order}: LEFT connection`);
+    } else {
+        // Rectangles overlap horizontally or are very close.
+        // Defaulting to right-of-A to left-of-B connection.
+        // This might need refinement for better vertical routing in overlaps.
+        startX = rectA.x + rectA.width;
+        endX = rectB.x;
+        console.log(`Points ${rectA.order}->${rectB.order}: OVERLAP/CLOSE connection (defaulting right->left)`);
+    }
+
+    // Calculate corner points for the elbow
+    // Using a 4-point polyline for a clearer horizontal-vertical-horizontal path
+    const midX = (startX + endX) / 2; // Horizontal midpoint
+    const pointsStr = `${startX},${startY} ${midX},${startY} ${midX},${endY} ${endX},${endY}`;
+
+    // Alternative: Simpler 3-point elbow (horizontal first)
+    // const cornerX = startX;
+    // const cornerY = endY;
+    // const pointsStr = `${startX},${startY} ${cornerX},${cornerY} ${endX},${endY}`;
+
+    // console.log('Calculated points string:', pointsStr);
     return pointsStr;
 };
 
+
+// --- Event Handlers ---
+const handleWindowChange = debounce(() => {
+    if (contextMenu.value.visible) {
+        // console.log('Window changed (resize/scroll), closing context menu.');
+        closeContextMenu();
+    }
+}, 150);
 
 // --- Lifecycle Hooks ---
 onMounted(() => {
@@ -128,31 +174,29 @@ onUnmounted(() => {
     window.removeEventListener('click', handleClickOutside);
     window.removeEventListener('resize', handleWindowChange);
     window.removeEventListener('scroll', handleWindowChange, true);
+    handleWindowChange.cancel?.(); // Use optional chaining for cancel
 });
 
-// --- Event Handlers ---
+// --- Event Handlers --- (Rest of the handlers remain unchanged)
 const handleClickOutside = (event) => {
     const contextMenuElement = contextMenuRef.value?.$el || contextMenuRef.value;
-    if (contextMenu.value.visible && contextMenuElement && !contextMenuElement.contains(event.target)) {
+    const isClickInsideMenu = contextMenuElement instanceof Element && contextMenuElement.contains(event.target);
+    if (contextMenu.value.visible && !isClickInsideMenu) {
         closeContextMenu();
     }
 };
 
-const handleWindowChange = () => {
-    if (contextMenu.value.visible) {
-        closeContextMenu();
-    }
-};
-
-// --- Context Menu Handlers ---
 const showContextMenu = (event, rect) => {
     if (isModalVisible.value) return;
     if (contextMenu.value.visible) closeContextMenu();
-    contextMenu.value.visible = true;
-    contextMenu.value.top = event.clientY;
-    contextMenu.value.left = event.clientX;
-    contextMenu.value.targetRectId = rect.id;
-    contextMenu.value.targetRectOrder = rect.order; // Vẫn lưu để biết order gốc nếu cần
+    event.preventDefault();
+    contextMenu.value = {
+        visible: true,
+        top: event.clientY,
+        left: event.clientX,
+        targetRectId: rect.id,
+        targetRectOrder: rect.order
+    };
 };
 
 const closeContextMenu = () => {
@@ -166,44 +210,35 @@ const closeContextMenu = () => {
 const handleEdit = () => {
     if (contextMenu.value.targetRectId) {
         const rectToEdit = drawnRectangles.value.find(r => r.id === contextMenu.value.targetRectId);
-        if (rectToEdit) {
-            openEditModal(rectToEdit);
-        }
+        if (rectToEdit) openEditModal(rectToEdit);
     }
     closeContextMenu();
 };
 
 const handleDelete = () => {
     const idToDelete = contextMenu.value.targetRectId;
-    closeContextMenu(); // Đóng menu trước
-
+    closeContextMenu();
     if (idToDelete !== null) {
         const indexToDelete = drawnRectangles.value.findIndex(r => r.id === idToDelete);
         if (indexToDelete > -1) {
-            // 1. Xóa
             drawnRectangles.value.splice(indexToDelete, 1);
-
-            // 2. Sắp xếp lại mảng còn lại theo thứ tự cũ (nếu có)
             const remainingSorted = drawnRectangles.value.slice().sort((a, b) => a.order - b.order);
-
-            // 3. Gán lại thứ tự liên tục 1, 2, 3,...
-            remainingSorted.forEach((rect, index) => {
-                rect.order = index + 1;
-            });
-
-            // 4. Cập nhật currentOrder
+            remainingSorted.forEach((rect, index) => { rect.order = index + 1; });
             currentOrder.value = drawnRectangles.value.length + 1;
-
-            console.log(`Đã xóa hình ID: ${idToDelete}. Thứ tự cập nhật. Current order: ${currentOrder.value}`);
+            // console.log(`Đã xóa hình ID: ${idToDelete}. Thứ tự cập nhật. Current order: ${currentOrder.value}`);
         }
     }
 };
 
-// --- Modal Handlers ---
 const openEditModal = (rect) => {
     if (!rect || draggingRectId.value !== null) return;
     closeContextMenu();
-    editingRect.value = rect;
+    try {
+        editingRect.value = { ...rect, formData: structuredClone(rect.formData || {}) };
+    } catch (e) {
+        console.warn("structuredClone failed, using JSON fallback.");
+        editingRect.value = { ...rect, formData: JSON.parse(JSON.stringify(rect.formData || {})) };
+    }
     isModalVisible.value = true;
 };
 
@@ -211,15 +246,15 @@ const saveForm = (updatedFormData) => {
     if (!editingRect.value) return;
     const originalRectIndex = drawnRectangles.value.findIndex(r => r.id === editingRect.value.id);
     if (originalRectIndex > -1) {
-        console.log("Lưu dữ liệu từ modal:", updatedFormData);
+        // console.log("Lưu dữ liệu từ modal:", updatedFormData);
         try {
             drawnRectangles.value[originalRectIndex].formData = structuredClone(updatedFormData);
         } catch (e) {
-            console.warn("structuredClone not supported, using JSON fallback.");
+            console.warn("structuredClone failed during save, using JSON fallback.");
             drawnRectangles.value[originalRectIndex].formData = JSON.parse(JSON.stringify(updatedFormData));
         }
     }
-    cancelForm(); // Đóng modal
+    cancelForm();
 };
 
 const cancelForm = () => {
@@ -227,150 +262,113 @@ const cancelForm = () => {
     editingRect.value = null;
 };
 
-// --- Drag and Drop Handlers ---
 const handleSourceDragStart = (event, item) => {
-    const dataToTransfer = { color: item.color, schemaId: item.schemaId };
-    const dataStr = JSON.stringify(dataToTransfer);
-    console.log('Source Drag Start - Data:', dataStr);
-    event.dataTransfer.setData(SOURCE_ITEM_DATA_TYPE, dataStr);
-    event.dataTransfer.effectAllowed = 'copy';
-    draggingRectId.value = null;
     closeContextMenu();
+    const dataToTransfer = { color: item.color, schemaId: item.schemaId };
+    try {
+        const dataStr = JSON.stringify(dataToTransfer);
+        event.dataTransfer.setData(SOURCE_ITEM_DATA_TYPE, dataStr);
+        event.dataTransfer.effectAllowed = 'copy';
+        draggingRectId.value = null;
+        // console.log('Source Drag Start - Data:', dataStr);
+    } catch (e) {
+        console.error("Source Drag Start Error:", e, dataToTransfer);
+    }
 };
 
 const handleRectDragStart = (event, rect) => {
     if (contextMenu.value.visible) closeContextMenu();
-    if (isModalVisible.value) {
-         event.preventDefault(); // Ngăn kéo khi modal mở
-         return;
+    if (isModalVisible.value) { event.preventDefault(); return; }
+    try {
+        event.dataTransfer.setData(RECT_ID_DATA_TYPE, rect.id.toString());
+        const offsetX = event.offsetX;
+        const offsetY = event.offsetY;
+        const offsetData = JSON.stringify({ x: offsetX, y: offsetY });
+        event.dataTransfer.setData(DRAG_OFFSET_DATA_TYPE, offsetData);
+        event.dataTransfer.effectAllowed = 'move';
+        draggingRectId.value = rect.id;
+        // console.log(`Bắt đầu kéo hình ID: ${rect.id} với offset:`, offsetData);
+    } catch (e) {
+         console.error("Rect Drag Start Error:", e);
+         event.preventDefault();
     }
-
-    event.dataTransfer.setData(RECT_ID_DATA_TYPE, rect.id.toString());
-    const offsetX = event.offsetX;
-    const offsetY = event.offsetY;
-    event.dataTransfer.setData(DRAG_OFFSET_DATA_TYPE, JSON.stringify({ x: offsetX, y: offsetY }));
-    event.dataTransfer.effectAllowed = 'move';
-    draggingRectId.value = rect.id;
-    console.log(`Bắt đầu kéo hình ID: ${rect.id}`);
 };
 
 const handleRectDragEnd = (event) => {
     draggingRectId.value = null;
-    console.log(`Kết thúc kéo hình`);
+    // console.log(`Kết thúc kéo hình`);
 };
 
 const handleDragOver = (event) => {
-    
-    console.log('Drag Over - Types:', event.dataTransfer.types);
-    event.preventDefault(); // Quan trọng để cho phép drop
-    // Đặt dropEffect dựa trên loại dữ liệu đang kéo
+    event.preventDefault();
     if (event.dataTransfer.types.includes(RECT_ID_DATA_TYPE)) {
         event.dataTransfer.dropEffect = "move";
     } else if (event.dataTransfer.types.includes(SOURCE_ITEM_DATA_TYPE)) {
         event.dataTransfer.dropEffect = "copy";
     } else {
-         event.dataTransfer.dropEffect = "none"; // Không cho phép thả nếu không phải loại dữ liệu hợp lệ
+         event.dataTransfer.dropEffect = "none";
     }
 };
 
 const handleDrop = (event) => {
     event.preventDefault();
     closeContextMenu();
-    console.log('--- Handle Drop ---');
-
+    // console.log('--- Handle Drop ---');
     const canvasRect = canvasRef.value?.getBoundingClientRect();
-    if (!canvasRect) {
-        console.error('Drop Error: Cannot get canvas bounds.');
-        return;
-    }
+    if (!canvasRect) { console.error('Drop Error: Cannot get canvas bounds.'); draggingRectId.value = null; return; }
 
     const dropX = event.clientX - canvasRect.left;
     const dropY = event.clientY - canvasRect.top;
-    console.log('Drop Coords (relative):', dropX, dropY);
-    console.log('DataTransfer Types:', event.dataTransfer.types);
+    // console.log(`Drop Coords (Relative): dropX=${dropX}, dropY=${dropY}`);
 
-    // Trường hợp DI CHUYỂN
     const draggedRectIdStr = event.dataTransfer.getData(RECT_ID_DATA_TYPE);
-    console.log('Attempting to get RECT_ID:', draggedRectIdStr);
-    if (draggedRectIdStr) {
-        console.log('Handling MOVE');
-        const draggedRectId = parseInt(draggedRectIdStr, 10);
-        const offsetData = event.dataTransfer.getData(DRAG_OFFSET_DATA_TYPE);
-        let offsetX = 0, offsetY = 0;
+    if (draggedRectIdStr) { // --- MOVE ---
+        // console.log('Handling MOVE for ID:', draggedRectIdStr);
         try {
-            const offset = JSON.parse(offsetData);
-            offsetX = offset.x; offsetY = offset.y;
-        } catch (e) { console.warn('Parse offset error', e); }
-
-        const rectToMove = drawnRectangles.value.find(r => r.id === draggedRectId);
-        if (rectToMove) {
-            rectToMove.x = dropX - offsetX;
-            rectToMove.y = dropY - offsetY;
-            console.log(`Đã di chuyển hình ID ${draggedRectId}`);
-        } else {
-             console.error(`Move Error: Cannot find rect with ID ${draggedRectId}`);
-        }
-    }
-    // Trường hợp TẠO MỚI
-    else {
+            const draggedRectId = parseInt(draggedRectIdStr, 10);
+            const offsetData = event.dataTransfer.getData(DRAG_OFFSET_DATA_TYPE);
+            let offsetX = 0, offsetY = 0;
+            try { const offset = JSON.parse(offsetData || '{}'); offsetX = offset.x || 0; offsetY = offset.y || 0; }
+            catch (e) { console.warn('Could not parse drag offset data:', offsetData, e); }
+            const rectToMove = drawnRectangles.value.find(r => r.id === draggedRectId);
+            if (rectToMove) { rectToMove.x = dropX - offsetX; rectToMove.y = dropY - offsetY; }
+            else { console.error(`Move Error: Cannot find rect with ID ${draggedRectId}.`); }
+        } catch (e) { console.error("Error processing move drop:", e); }
+    } else { // --- CREATE NEW ---
         const sourceItemDataStr = event.dataTransfer.getData(SOURCE_ITEM_DATA_TYPE);
-        console.log('Attempting to get SOURCE_ITEM:', sourceItemDataStr);
+        // console.log('Attempting to get SOURCE_ITEM:', sourceItemDataStr);
         if (sourceItemDataStr) {
-            console.log('Handling CREATE NEW');
+            // console.log('Handling CREATE NEW');
             try {
                 const sourceItemData = JSON.parse(sourceItemDataStr);
                 const schema = getSchemaById(sourceItemData.schemaId);
-                // Khởi tạo formData từ giá trị mặc định của schema
+                if (!schema) { console.error(`Create Error: Cannot find schema ID ${sourceItemData.schemaId}`); draggingRectId.value = null; return; }
                 const initialFormData = {};
-                for(const key in schema) {
-                    initialFormData[key] = schema[key];
-                }
-
+                Object.keys(schema).forEach(key => { initialFormData[key] = schema[key]; });
                 const newRect = {
-                    id: Date.now(),
-                    color: sourceItemData.color,
-                    schemaId: sourceItemData.schemaId,
-                    x: dropX - defaultRectWidth / 2,
-                    y: dropY - defaultRectHeight / 2,
-                    width: defaultRectWidth,
-                    height: defaultRectHeight,
-                    order: currentOrder.value, // Gán thứ tự hiện tại
-                    formData: initialFormData
+                    id: Date.now(), color: sourceItemData.color, schemaId: sourceItemData.schemaId,
+                    x: dropX - defaultRectWidth / 2, y: dropY - defaultRectHeight / 2,
+                    width: defaultRectWidth, height: defaultRectHeight,
+                    order: currentOrder.value, formData: initialFormData
                 };
-                console.log('Pushing new rectangle:', newRect);
                 drawnRectangles.value.push(newRect);
-                currentOrder.value++; // Tăng thứ tự cho lần sau
-                console.log('drawnRectangles length now:', drawnRectangles.value.length);
-            } catch (e) {
-                console.error("Drop Error: Failed to parse source item data:", e, sourceItemDataStr);
-            }
-        } else {
-            console.warn('Drop Warning: No valid data found in dataTransfer.');
-        }
+                currentOrder.value++;
+            } catch (e) { console.error("Drop Error: Failed to process source item:", e, sourceItemDataStr); }
+        } else { console.warn('Drop Warning: No valid data found.'); }
     }
-    draggingRectId.value = null; // Reset trạng thái kéo
+    draggingRectId.value = null;
 };
 
 </script>
 
 <style scoped>
-/* CSS cho layout chính */
+/* CSS không đổi */
 .drawing-app { display: flex; gap: 2rem; font-family: sans-serif; }
 .palette { border: 1px solid #ccc; padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; background-color: #f8f8f8; height: fit-content; }
 .palette h3 { margin: 0 0 0.5rem 0; font-size: 0.9em; color: #555; }
 .source-rect { width: 50px; height: 50px; border: 1px solid #eee; cursor: grab; transition: transform 0.2s ease; }
 .source-rect:active { cursor: grabbing; transform: scale(1.1); }
-.canvas { border: 2px dashed #007bff; width: 500px; height: 400px; position: relative; background-color: #e9ecef; overflow: hidden; }
+.canvas { border: 2px dashed #007bff; width: 100%; height: 500px; position: relative; background-color: #e9ecef; overflow: hidden; }
 .canvas h3 { position: absolute; top: 5px; left: 10px; margin: 0; font-size: 0.9em; color: #6c757d; pointer-events: none; }
-
-/* CSS cho SVG layer */
-.connection-lines {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-}
+.connection-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
 </style>
