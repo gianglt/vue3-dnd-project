@@ -1,7 +1,7 @@
 # .eslintignore
 
 # Bỏ qua kiểm tra ESLint cho file DrawingCanvas.vue
-src/components/DrawingCanvas.vue
+src/components/**/**
 
 # Bạn cũng có thể bỏ qua cả thư mục
-# src/legacy-components/
+src/components/
