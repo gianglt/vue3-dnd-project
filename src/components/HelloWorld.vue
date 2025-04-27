@@ -1,58 +1,65 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
-  </div>
+  <h1>Danh sách các mục</h1>
+  <!-- 
+    Sử dụng v-model để ràng buộc với ref 'items'.
+    Sử dụng slot #item để render từng phần tử (cách được khuyến nghị cho vuedraggable).
+    Thêm 'item-key' để vuedraggable theo dõi các mục hiệu quả hơn.
+  -->
+  <draggable
+    v-model="items"
+    @change="log"
+    item-key="name"
+    tag="div"
+    class="list-group"
+  >
+    <template #item="{ element }">
+      <div class="item">
+        {{ element.name }}
+      </div>
+    </template>
+  </draggable>
 </template>
 
-<script>
-export default {
-  name: 'HelloWorld',
-  props: {
-    msg: String
-  }
-}
+<script setup>
+import { ref } from 'vue';
+// Đảm bảo bạn đã cài đặt phiên bản vuedraggable tương thích với Vue 3
+// npm install vuedraggable@next hoặc tương tự
+import draggable from 'vuedraggable';
+
+// Định nghĩa dữ liệu phản ứng (reactive data) bằng ref
+const items = ref([
+  { name: 'Mục 1' },
+  { name: 'Mục 2' },
+  { name: 'Mục 3' },
+  { name: 'Mục 4' },
+]);
+
+// Định nghĩa phương thức log trực tiếp trong <script setup>
+const log = (evt) => {
+  console.log('Sự kiện kéo thả:', evt);
+  // Bạn có thể xem thứ tự mới của mảng items tại đây
+  console.log('Thứ tự mới:', items.value);
+};
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h3 {
-  margin: 40px 0 0;
+.item {
+  border: .0625rem solid #ccc;
+  padding: .625rem;
+  margin-bottom: .3125rem;
+  background-color: #f9f9f9;
+  cursor: move; /* Con trỏ di chuyển khi hover */
 }
-ul {
-  list-style-type: none;
+
+/* Tùy chọn: Thêm một số style cho vùng chứa kéo thả */
+.list-group {
   padding: 0;
+  min-height: 40px; /* Đảm bảo có vùng để thả vào ngay cả khi rỗng */
 }
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
+
+/* Tùy chọn: Style khi đang kéo (thêm class ghost-class vào draggable) */
+.ghost {
+  opacity: 0.5;
+  background: #c8ebfb;
 }
 </style>
