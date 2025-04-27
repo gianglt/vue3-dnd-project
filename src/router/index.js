@@ -5,6 +5,7 @@ import DrawingCanvas from '../components/drawing/DrawingCanvas.vue'
 import DrawProcessCanvas from '../components/DrawProcess/DrawProcessCanvas.vue' // Đảm bảo đường dẫn đúng
 import DynamicProcessCanvas from '../components/DynamicProcess/DynamicProcessCanvas.vue' // Đảm bảo đường dẫn đúng
 import TabProcessCanvas from '../components/TabProcess/TabProcessCanvas.vue' // Đảm bảo đường dẫn đúng
+import RefProcessCanvas from '../components/RefProcess/RefProcessCanvas.vue' // Đảm bảo đường dẫn đúng
 
 const routes = [
   {
@@ -35,7 +36,13 @@ const routes = [
       name: 'TabProcessCanvas', // Tên route mới
       component: TabProcessCanvas // Component mới
     },
-]
+    {
+      path: '/refprocess', // Đường dẫn mới
+      name: 'RefProcessCanvas', // Tên route mới
+      component: RefProcessCanvas // Component mới
+    },
+
+  ]
 
 const router = createRouter({
   history: createWebHistory(),
