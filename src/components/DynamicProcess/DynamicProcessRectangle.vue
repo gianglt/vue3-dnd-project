@@ -17,7 +17,7 @@
 
 <script setup>
 /* eslint-disable */
-import { computed, defineProps, defineEmits } from 'vue';
+import { computed } from 'vue';
 // Đảm bảo import types đúng đường dẫn
 // import { RECT_ID_DATA_TYPE, DRAG_OFFSET_DATA_TYPE } from '../../types/drawingTypes.js'; // Không cần trực tiếp ở đây
 

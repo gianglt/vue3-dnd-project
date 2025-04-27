@@ -21,7 +21,7 @@
 
 <script setup>
 // Script không đổi
-import { defineProps, defineEmits } from 'vue';
+
 const props = defineProps({ rect: { type: Object, required: true }, preventDrag: { type: Boolean, default: false } });
 const emit = defineEmits(['dragstart', 'dragend', 'contextmenu', 'open-edit']);
 const onDragStart = (event) => { emit('dragstart', event, props.rect); };

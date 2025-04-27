@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits, nextTick } from 'vue';
+import { ref, watch,  nextTick } from 'vue';
 
 const props = defineProps({
     visible: Boolean,

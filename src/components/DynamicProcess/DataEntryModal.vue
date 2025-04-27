@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits, computed, reactive } from 'vue';
+import { ref, watch,  computed, reactive } from 'vue';
 
 const props = defineProps({
     visible: {

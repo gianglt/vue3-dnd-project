@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue';
+import {  computed } from 'vue';
 // Đảm bảo import đúng service dùng chung
 import { saveCanvasStateToFile, loadCanvasStateFromFile } from '../../services/canvasStateService.js';
 

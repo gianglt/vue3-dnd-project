@@ -4255,7 +4255,7 @@ vue
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
     visible: Boolean,
@@ -4696,7 +4696,7 @@ vue
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue';
+import {  computed } from 'vue';
 import { saveCanvasStateToFile, loadCanvasStateFromFile } from '../../services/canvasStateService.js'; // Import service
 
 const props = defineProps({
@@ -5835,7 +5835,7 @@ vue
 </template>
 
 <script setup>
-import { computed, defineProps, defineEmits } from 'vue';
+import { computed } from 'vue';
 // Đảm bảo import types đúng đường dẫn
 // import { RECT_ID_DATA_TYPE, DRAG_OFFSET_DATA_TYPE } from '../../types/drawingTypes.js'; // Không cần trực tiếp ở đây
 
@@ -5927,7 +5927,7 @@ vue
 </template>
 
 <script setup>
-import { computed, defineProps, defineEmits } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
     visible: Boolean,
@@ -6017,7 +6017,7 @@ vue
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
     visible: Boolean,
@@ -6081,7 +6081,7 @@ vue
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue';
+import {  computed } from 'vue';
 // Đảm bảo import đúng service dùng chung
 import { saveCanvasStateToFile, loadCanvasStateFromFile } from '../../services/canvasStateService.js';
 
@@ -6392,7 +6392,7 @@ vue
 
 <script setup>
 // ... (phần script setup không đổi) ...
-import { computed, defineProps, defineEmits } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
     rect: { type: Object, required: true },
@@ -6527,7 +6527,7 @@ vue
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
     visible: Boolean,
@@ -6960,7 +6960,7 @@ vue
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch } from 'vue';
 // Nếu dùng vuedraggable, import nó ở đây:
 // import draggable from 'vuedraggable';
 

@@ -114,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits, nextTick } from 'vue';
+import { ref, watch,  nextTick } from 'vue';
 // import draggable from 'vuedraggable'; // Consider if simple HTML5 D&D becomes too complex
 
 const props = defineProps({

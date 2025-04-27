@@ -71,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch } from 'vue';
 // Nếu dùng vuedraggable, import nó ở đây:
 // import draggable from 'vuedraggable';
 

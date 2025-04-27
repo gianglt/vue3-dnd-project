@@ -142,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits, computed, reactive, nextTick } from 'vue';
+import { ref, watch,  computed, reactive, nextTick } from 'vue';
 
 const props = defineProps({
     visible: {
