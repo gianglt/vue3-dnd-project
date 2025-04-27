@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sourceItem>
+  <item schemaId="schema_teal" color="#4ecdc4">
+    <formSchema>
+      <field key="Đối tượng" type="text">Khối Teal</field>
+      <field key="Trạng thái" type="text">Hoạt động</field>
+      <field key="Số lượng" type="number">5</field> <!-- Thêm ví dụ number -->
+    </formSchema>
+  </item>
+</sourceItem>
