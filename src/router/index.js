@@ -5,7 +5,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 // Import các component bạn muốn điều hướng đến
 // Đảm bảo đường dẫn import là chính xác so với vị trí file router/index.js
 import HelloWorld from '../components/HelloWorld.vue';
-import DrawingCanvas from '../drawing/DrawingCanvas.vue'; // <-- Đường dẫn mới
+import DrawingCanvas from '../components/drawing/DrawingCanvas.vue'; // <-- Đường dẫn mới
 
 // Định nghĩa các route
 const routes = [
