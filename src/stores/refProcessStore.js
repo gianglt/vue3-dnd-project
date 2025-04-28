@@ -18,7 +18,7 @@ const getDefaultValue = (type) => {
     }
 };
 
-export const useProcessStore = defineStore('process', {
+export const useProcessStore = defineStore('refProcess', {
     // --- STATE ---
     // Định nghĩa state ban đầu
     state: () => ({

@@ -162,8 +162,8 @@ const parseSingleTemplateXML = (xmlText, filename) => {
  * @returns {Promise<void>}
  * @throws {Error} Nếu có lỗi khi fetch manifest.
  */
-export const loadPaletteData = async (manifestPath = '/tab_templates/manifest.json') => { // Đảm bảo đường dẫn đúng
-    console.log(`[TabProcess] Attempting to load palette data from manifest: ${manifestPath}`);
+export const loadPaletteData = async (manifestPath = '/ref_templates/manifest.json') => { // Đảm bảo đường dẫn đúng
+    console.log(`[RefProcess] Attempting to load palette data from manifest: ${manifestPath}`);
     try {
         const response = await fetch(manifestPath);
         if (!response.ok) {
@@ -181,10 +181,10 @@ export const loadPaletteData = async (manifestPath = '/tab_templates/manifest.js
             filename: item.filename // Giữ filename để load chi tiết sau
         }));
 
-        console.log('[TabProcess] Successfully loaded palette data:', paletteItems.value);
+        console.log('[RefProcess] Successfully loaded palette data:', paletteItems.value);
 
     } catch (error) {
-        console.error("[TabProcess] Error loading or parsing manifest file:", error);
+        console.error("[RefProcess] Error loading or parsing manifest file:", error);
         paletteItems.value = [];
         throw error;
     }
@@ -198,12 +198,12 @@ export const loadPaletteData = async (manifestPath = '/tab_templates/manifest.js
 export const getOrLoadFormSchema = async (schemaId) => {
     // 1. Kiểm tra cache
     if (loadedSchemasCache[schemaId]) {
-        console.log(`[TabProcess] Schema ${schemaId} found in cache.`);
+        console.log(`[RefProcess] Schema ${schemaId} found in cache.`);
         // Trả về bản sao sâu của formSchema từ cache để tránh sửa đổi ngoài ý muốn
         try {
             return structuredClone(loadedSchemasCache[schemaId].formSchema);
         } catch(e) {
-             console.warn("[TabProcess] structuredClone failed in getOrLoadFormSchema (cache hit), using JSON fallback.");
+             console.warn("[RefProcess] structuredClone failed in getOrLoadFormSchema (cache hit), using JSON fallback.");
              return JSON.parse(JSON.stringify(loadedSchemasCache[schemaId].formSchema));
         }
     }
@@ -211,17 +211,17 @@ export const getOrLoadFormSchema = async (schemaId) => {
     // 2. Tìm thông tin file trong paletteItems
     const itemInfo = paletteItems.value.find(p => p.schemaId === schemaId);
     if (!itemInfo || !itemInfo.filename) {
-        console.error(`[TabProcess] Schema info or filename not found for schemaId: ${schemaId} in paletteItems.`);
+        console.error(`[RefProcess] Schema info or filename not found for schemaId: ${schemaId} in paletteItems.`);
         return null;
     }
 
     // 3. Tải file XML (Đảm bảo đường dẫn đúng)
-    const xmlFilePath = `/tab_templates/${itemInfo.filename}`; // Đường dẫn cho tab templates
-    console.log(`[TabProcess] Schema ${schemaId} not in cache. Loading from ${xmlFilePath}...`);
+    const xmlFilePath = `/ref_templates/${itemInfo.filename}`; // Đường dẫn cho tab templates
+    console.log(`[RefProcess] Schema ${schemaId} not in cache. Loading from ${xmlFilePath}...`);
     try {
         const response = await fetch(xmlFilePath);
         if (!response.ok) {
-            console.error(`[TabProcess] HTTP error! status: ${response.status} while fetching ${xmlFilePath}`);
+            console.error(`[RefProcess] HTTP error! status: ${response.status} while fetching ${xmlFilePath}`);
             return null;
         }
         const xmlText = await response.text();
@@ -235,27 +235,27 @@ export const getOrLoadFormSchema = async (schemaId) => {
              try {
                 loadedSchemasCache[schemaId] = structuredClone(fullSchemaData);
             } catch(e) {
-                 console.warn("[TabProcess] structuredClone failed when caching schema, using JSON fallback.");
+                 console.warn("[RefProcess] structuredClone failed when caching schema, using JSON fallback.");
                  loadedSchemasCache[schemaId] = JSON.parse(JSON.stringify(fullSchemaData));
             }
 
-            console.log(`[TabProcess] Schema ${schemaId} loaded and cached.`);
+            console.log(`[RefProcess] Schema ${schemaId} loaded and cached.`);
             // Trả về chỉ phần formSchema { tabs: [...] }
             // Tạo bản sao sâu trước khi trả về
              try {
                 return structuredClone(fullSchemaData.formSchema);
             } catch(e) {
-                 console.warn("[TabProcess] structuredClone failed before returning loaded schema, using JSON fallback.");
+                 console.warn("[RefProcess] structuredClone failed before returning loaded schema, using JSON fallback.");
                  return JSON.parse(JSON.stringify(fullSchemaData.formSchema));
             }
         } else {
-            console.error(`[TabProcess] Failed to parse valid schema data (with tabs structure) from ${xmlFilePath}. Result:`, fullSchemaData);
+            console.error(`[RefProcess] Failed to parse valid schema data (with tabs structure) from ${xmlFilePath}. Result:`, fullSchemaData);
             // Có thể cache kết quả lỗi (ví dụ: cache null) để tránh load lại liên tục nếu file lỗi
             // loadedSchemasCache[schemaId] = null; // Hoặc một giá trị đặc biệt
             return null; // Trả về null nếu parse lỗi hoặc cấu trúc không đúng
         }
     } catch (error) {
-        console.error(`[TabProcess] Error fetching or processing ${xmlFilePath}:`, error);
+        console.error(`[RefProcess] Error fetching or processing ${xmlFilePath}:`, error);
         return null;
     }
 };

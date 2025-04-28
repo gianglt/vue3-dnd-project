@@ -4,7 +4,7 @@ import { nextTick } from 'vue'; // Import nextTick nếu cần
 import { debounce } from 'lodash-es'; // Import debounce nếu cần
 
 // Import logic schema và types (giữ nguyên)
-import { paletteItems, getCachedSchemaById, loadPaletteData, getOrLoadFormSchema } from '../data/refProcessSchemas.js';
+import { paletteItems, getCachedSchemaById, loadPaletteData, getOrLoadFormSchema } from '../data/tabProcessSchemas.js';
 import { RECT_ID_DATA_TYPE, DRAG_OFFSET_DATA_TYPE, SOURCE_ITEM_DATA_TYPE } from '../types/drawingTypes.js';
 
 // Helper (giữ nguyên hoặc chuyển vào đây nếu chỉ dùng trong store)
@@ -18,7 +18,7 @@ const getDefaultValue = (type) => {
     }
 };
 
-export const useProcessStore = defineStore('process', {
+export const useProcessStore = defineStore('tabProcess', {
     // --- STATE ---
     // Định nghĩa state ban đầu
     state: () => ({

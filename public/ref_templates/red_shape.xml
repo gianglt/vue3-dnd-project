@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sourceItem> <!-- Optional but good for consistency -->
+  <!-- Add the item tag with schemaId and color -->
+  <item schemaId="schema_red_tabs" color="#ff6b6b"> <!-- Use an appropriate schemaId and color -->
+    <!-- Your existing FormSchema with Tabs goes inside the item -->
+    <formSchema>
+        <Tabs>
+            <Tab id="tab1_general" label="Thông tin chung">
+                <Field key="customerName" type="text" label="Tên Khách Hàng" value="" required="true" />
+                <Field key="orderDate" type="date" label="Ngày Đặt Hàng" value="" />
+                <!-- Add description, placeholder etc. as attributes -->
+            </Tab>
+            <Tab id="tab2_details" label="Chi tiết Sản phẩm">
+                <Field key="productCode" type="text" label="Mã Sản Phẩm" value="" />
+                <Field key="quantity" type="number" label="Số lượng" value="1" />
+                <Field key="isUrgent" type="boolean" label="Gấp" value="false" />
+            </Tab>
+             <Tab id="tab3_references" label="Tham chiếu">
+                 <Field key="assignedEmployee" type="reference" label="Nhân viên phụ trách" referenceType="employees" value="" />
+                 <Field key="documentType" type="reference" label="Loại chứng từ" referenceType="documenttypes" value="" />
+             </Tab>
+            <!-- More Tabs -->
+        </Tabs>
+    </formSchema>
+  </item>
+</sourceItem>
