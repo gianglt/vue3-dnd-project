@@ -615,6 +615,8 @@ const handleSaveSchema = () => {
     let hasError = false;
     const allKeysAcrossTabs = new Set(); // To check for unique keys across the entire form
 
+    console.log("Built Schema Tabs:", builtSchemaTabs.value); // Add this line to log builtSchemaTabs
+
     for (let i = 0; i < builtSchemaTabs.value.length; i++) {
         const tab = builtSchemaTabs.value[i];
         const finalTab = {
