@@ -80,7 +80,7 @@
                                     @drop.prevent="handleFieldDrop($event, tabIndex, fieldKey)"
                                     @dragend="handleFieldDragEnd"
                                     :class="{ 'drag-over': dragOverFieldKey === fieldKey && draggingFieldKey !== fieldKey }"
-                                    :data-field-key="fieldKey" <!-- Added for easier selection in updateFieldKey -->
+                                    :data-field-key="fieldKey" 
                                 >
                                     <span class="drag-handle" title="Kéo để sắp xếp trong tab">⠿</span>
                                     <!-- Key Input -->
