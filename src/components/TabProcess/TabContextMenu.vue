@@ -1,16 +1,16 @@
 <template>
-    <ul v-if="visible" class="context-menu" :style="{ top: top + 'px', left: left + 'px' }">
-        <li @click="emitEnterData">
+    <ul v-if="visible" role="menu" class="context-menu" :style="{ top: top + 'px', left: left + 'px' }">
+        <li role="menuitem" tabindex="-1" @click="emitEnterData">
             <i class="fas fa-keyboard"></i> Nhập dữ liệu
         </li>
-        <li @click="emitEdit">
+        <li role="menuitem" tabindex="-1" @click="emitEdit">
             <i class="fas fa-pencil-alt"></i> Chỉnh sửa Schema
         </li>
         <!-- NEW: Option for Reference Schema Editor -->
-        <li @click="emitEditRefSchema">
+        <li role="menuitem" tabindex="-1" @click="emitEditRefSchema">
             <i class="fas fa-cogs"></i> Chỉnh sửa Schema (Ref)
         </li>
-        <li @click="emitDelete" class="delete-option">
+        <li role="menuitem" tabindex="-1" @click="emitDelete" class="delete-option">
             <i class="fas fa-trash-alt"></i> Xóa bước
         </li>
     </ul>
@@ -37,9 +37,6 @@ const emitEditRefSchema = () => emit('editRefSchema');
 </script>
 
 <style scoped>
-/* Thêm icon nếu muốn (cần Font Awesome hoặc tương tự) */
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
-
 .context-menu {
     position: fixed;
     background-color: white;
@@ -49,7 +46,8 @@ const emitEditRefSchema = () => emit('editRefSchema');
     padding: 8px 0;
     margin: 0;
     z-index: 100;
-    min-width: 200px; /* Adjust width if needed */
+    min-width: 200px;
+    /* Adjust width if needed */
     border-radius: 4px;
 }
 
@@ -80,9 +78,11 @@ const emitEditRefSchema = () => emit('editRefSchema');
     margin-top: 5px;
     padding-top: 8px;
 }
+
 .context-menu .delete-option:hover {
     background-color: #f8d7da;
 }
+
 .context-menu .delete-option i {
     color: #dc3545;
 }

@@ -2,6 +2,7 @@
 
 import { createPinia } from 'pinia' // Import Pinia
 import { createApp } from 'vue';
+import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
 import App from './App.vue';
 import router from './router'; // <-- Import router từ file cấu hình
 
