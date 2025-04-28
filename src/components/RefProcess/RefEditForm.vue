@@ -3,30 +3,35 @@
         <div class="modal-content form-builder-modal">
             <h2>Xây dựng Form Nhập liệu Động (Có Tabs và Tham chiếu)</h2>
 
-            <!-- Optional: Display error if fetching reference types failed -->
+            <!-- Display error from Pinia store -->
             <div v-if="referenceTypesError" class="api-error-message">
-                Lỗi tải danh sách loại tham chiếu: {{ referenceTypesError }}. Vui lòng thử lại hoặc kiểm tra cấu hình API.
+                Lỗi tải danh sách loại tham chiếu: {{ referenceTypesError }}. Vui lòng thử lại hoặc kiểm tra cấu hình
+                API.
             </div>
 
             <div class="form-builder-layout">
                 <!-- Palette -->
                 <div class="palette">
                     <h4>Kéo loại trường:</h4>
-                    <div
-                        v-for="fieldType in availableFieldTypes"
-                        :key="fieldType.type"
-                        class="palette-item"
-                        draggable="true"
-                        @dragstart="handlePaletteDragStart($event, fieldType.type)"
-                        :title="fieldType.type === 'reference' && isLoadingReferenceTypes ? 'Đang tải loại tham chiếu...' : ''"
-                        :style="{ opacity: fieldType.type === 'reference' && isLoadingReferenceTypes ? 0.6 : 1, cursor: fieldType.type === 'reference' && isLoadingReferenceTypes ? 'not-allowed' : 'grab' }"
-                        :draggable="!(fieldType.type === 'reference' && isLoadingReferenceTypes)"
-                    >
+                    <!-- Standard Field Types -->
+                    <div v-for="fieldType in availableFieldTypes" :key="fieldType.type" class="palette-item"
+                        draggable="true" @dragstart="handlePaletteDragStart($event, fieldType.type)">
                         {{ fieldType.label }}
-                        <span v-if="fieldType.type === 'reference' && isLoadingReferenceTypes"> (Loading...)</span>
                     </div>
-                     <hr>
-                     <button @click="addTab" class="btn btn-add-tab">Thêm Tab Mới</button>
+
+                    <hr>
+
+                    <!-- Palette Item for Reference (Uses Pinia state) -->
+                    <div class="palette-item" draggable="true" @dragstart="handlePaletteDragStart($event, 'reference')"
+                        :title="isLoadingReferenceTypes ? 'Đang tải loại tham chiếu...' : 'Kéo để thêm trường Tham chiếu'"
+                        :style="{ opacity: isLoadingReferenceTypes ? 0.6 : 1, cursor: isLoadingReferenceTypes ? 'not-allowed' : 'grab' }"
+                        :draggable="!isLoadingReferenceTypes">
+                        Tham chiếu (Reference)
+                        <span v-if="isLoadingReferenceTypes"> (Loading...)</span>
+                    </div>
+
+                    <hr>
+                    <button @click="addTab" class="btn btn-add-tab">Thêm Tab Mới</button>
                 </div>
 
                 <!-- Canvas/Khu vực xây dựng form -->
@@ -35,103 +40,91 @@
                         Thêm tab và thả trường vào...
                     </div>
                     <div v-else class="tabs-container">
-                         <!-- Tab Navigation -->
-                         <div class="tab-headers">
-                             <div
-                                 v-for="(tab, tabIndex) in builtSchemaTabs"
-                                 :key="tab.id"
-                                 class="tab-header"
-                                 :class="{ active: activeTabIndex === tabIndex }"
-                                 @click="activeTabIndex = tabIndex"
-                             >
-                                 <input type="text" v-model="tab.label" placeholder="Tên Tab" class="tab-label-input"/>
-                                 <button
-                                     @click.stop="removeTab(tabIndex)"
-                                     class="delete-tab-btn"
-                                     title="Xóa Tab này"
-                                     v-if="builtSchemaTabs.length > 1"
-                                 >
-                                     ×
-                                 </button>
-                             </div>
-                         </div>
+                        <!-- Tab Navigation -->
+                        <div class="tab-headers">
+                            <div v-for="(tab, tabIndex) in builtSchemaTabs" :key="tab.id" class="tab-header"
+                                :class="{ active: activeTabIndex === tabIndex }" @click="activeTabIndex = tabIndex">
+                                <input type="text" v-model="tab.label" placeholder="Tên Tab" class="tab-label-input" />
+                                <button @click.stop="removeTab(tabIndex)" class="delete-tab-btn" title="Xóa Tab này"
+                                    v-if="builtSchemaTabs.length > 1">
+                                    ×
+                                </button>
+                            </div>
+                        </div>
 
-                         <!-- Tab Content (Fields) -->
-                         <div
-                            v-for="(tab, tabIndex) in builtSchemaTabs"
-                            :key="tab.id + '-content'"
-                            v-show="activeTabIndex === tabIndex"
-                            class="tab-content"
+                        <!-- Tab Content (Fields) -->
+                        <div v-for="(tab, tabIndex) in builtSchemaTabs" :key="tab.id + '-content'"
+                            v-show="activeTabIndex === tabIndex" class="tab-content"
                             @dragover.prevent="handleCanvasDragOver($event, tabIndex)"
-                            @drop.prevent="handleCanvasDrop($event, tabIndex)"
-                         >
-                             <div v-if="!tab.fields || Object.keys(tab.fields).length === 0" class="canvas-placeholder-inner">
-                                 Thả các trường cho tab "{{ tab.label || 'này' }}" vào đây...
-                             </div>
-                             <!-- Field List -->
-                             <div v-else class="fields-list">
-                                <div
-                                    v-for="(fieldSchema, fieldKey, fieldIndex) in tab.fields"
-                                    :key="fieldKey"
-                                    class="form-field-preview"
-                                    draggable="true"
+                            @drop.prevent="handleCanvasDrop($event, tabIndex)">
+                            <div v-if="!tab.fields || Object.keys(tab.fields).length === 0"
+                                class="canvas-placeholder-inner">
+                                Thả các trường cho tab "{{ tab.label || 'này' }}" vào đây...
+                            </div>
+                            <!-- Field List -->
+                            <div v-else class="fields-list">
+                                <div v-for="(fieldSchema, fieldKey, fieldIndex) in tab.fields" :key="fieldKey"
+                                    class="form-field-preview" draggable="true"
                                     @dragstart="handleFieldDragStart($event, tabIndex, fieldKey)"
                                     @dragover.prevent="handleFieldDragOver($event, tabIndex, fieldKey)"
                                     @drop.prevent="handleFieldDrop($event, tabIndex, fieldKey)"
                                     @dragend="handleFieldDragEnd"
                                     :class="{ 'drag-over': dragOverFieldKey === fieldKey && draggingFieldKey !== fieldKey }"
-                                    :data-field-key="fieldKey" 
-                                >
+                                    :data-field-key="fieldKey">
                                     <span class="drag-handle" title="Kéo để sắp xếp trong tab">⠿</span>
                                     <!-- Key Input -->
-                                    <input
-                                        type="text"
-                                        :value="fieldKey"
+                                    <input type="text" :value="fieldKey"
                                         @input="updateFieldKey(tabIndex, fieldKey, $event.target.value)"
-                                        placeholder="Mã định danh (Key)"
-                                        class="field-key-input"
-                                        required
-                                    />
+                                        placeholder="Mã định danh (Key)" class="field-key-input" required />
                                     <!-- Label Input -->
-                                    <input type="text" v-model="fieldSchema.label" placeholder="Nhãn hiển thị" class="field-label-input"/>
+                                    <input type="text" v-model="fieldSchema.label" placeholder="Nhãn hiển thị"
+                                        class="field-label-input" />
                                     <span class="field-type-label">({{ fieldSchema.type }})</span>
 
                                     <!-- Default Value Input (Conditional) -->
-                                    <input v-if="isValueType(fieldSchema.type, ['text', 'email', 'url', 'date'])" :type="fieldSchema.type" v-model="fieldSchema.value" placeholder="Giá trị mặc định" class="field-value-input"/>
-                                    <input v-else-if="fieldSchema.type === 'number'" type="number" v-model.number="fieldSchema.value" placeholder="Giá trị mặc định" class="field-value-input"/>
-                                    <textarea v-else-if="fieldSchema.type === 'textarea'" v-model="fieldSchema.value" placeholder="Giá trị mặc định" rows="1" class="field-value-input"></textarea>
-                                    <input v-else-if="fieldSchema.type === 'boolean'" type="checkbox" v-model="fieldSchema.value" class="field-value-input-cb"/>
+                                    <input v-if="isValueType(fieldSchema.type, ['text', 'email', 'url', 'date'])"
+                                        :type="fieldSchema.type" v-model="fieldSchema.value"
+                                        placeholder="Giá trị mặc định" class="field-value-input" />
+                                    <input v-else-if="fieldSchema.type === 'number'" type="number"
+                                        v-model.number="fieldSchema.value" placeholder="Giá trị mặc định"
+                                        class="field-value-input" />
+                                    <textarea v-else-if="fieldSchema.type === 'textarea'" v-model="fieldSchema.value"
+                                        placeholder="Giá trị mặc định" rows="1" class="field-value-input"></textarea>
+                                    <input v-else-if="fieldSchema.type === 'boolean'" type="checkbox"
+                                        v-model="fieldSchema.value" class="field-value-input-cb" />
 
-                                    <!-- *** UPDATED: Reference Type Selector *** -->
-                                    <select
-                                        v-else-if="fieldSchema.type === 'reference'"
-                                        v-model="fieldSchema.referenceType"
-                                        class="field-reference-type-select"
+                                    <!-- Reference Type Selector (Uses Pinia state) -->
+                                    <select v-else-if="fieldSchema.type === 'reference'"
+                                        v-model="fieldSchema.referenceType" class="field-reference-type-select"
                                         title="Chọn loại tham chiếu"
-                                        :disabled="isLoadingReferenceTypes || availableReferenceTypes.length === 0"
-                                    >
+                                        :disabled="isLoadingReferenceTypes || availableReferenceTypes.length === 0">
                                         <option :value="null" disabled>
-                                            {{ isLoadingReferenceTypes ? 'Đang tải...' : (availableReferenceTypes.length === 0 ? '(Không có loại)' : '-- Chọn loại --') }}
+                                            {{ isLoadingReferenceTypes ? 'Đang tải...' : (availableReferenceTypes.length
+                                            === 0 ? '(Không có loại)' : '-- Chọn loại --') }}
                                         </option>
-                                        <option v-for="refType in availableReferenceTypes" :key="refType" :value="refType">
+                                        <option v-for="refType in availableReferenceTypes" :key="refType"
+                                            :value="refType">
                                             {{ refType }}
                                         </option>
                                     </select>
 
-                                    <!-- Required Checkbox -->
-                                     <!-- <input type="checkbox" v-model="fieldSchema.required" :id="'req-'+tabIndex+'-'+fieldKey" class="field-required-cb" title="Bắt buộc nhập">
+                                    <!-- Required Checkbox (Optional) -->
+                                    <!-- <input type="checkbox" v-model="fieldSchema.required" :id="'req-'+tabIndex+'-'+fieldKey" class="field-required-cb" title="Bắt buộc nhập">
                                      <label :for="'req-'+tabIndex+'-'+fieldKey" class="field-required-label">Req?</label> -->
 
-                                    <button @click="removeField(tabIndex, fieldKey)" class="delete-field-btn" title="Xóa trường">×</button>
+                                    <button @click="removeField(tabIndex, fieldKey)" class="delete-field-btn"
+                                        title="Xóa trường">×</button>
                                 </div>
-                             </div>
-                         </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="modal-actions">
-                <button type="button" @click="handleSaveSchema" class="btn btn-save" :disabled="isLoadingReferenceTypes">Lưu Cấu trúc Form</button>
+                <!-- Disable Save button if reference types are loading (from Pinia) -->
+                <button type="button" @click="handleSaveSchema" class="btn btn-save"
+                    :disabled="isLoadingReferenceTypes">Lưu Cấu trúc Form</button>
                 <button type="button" @click="handleCancel" class="btn btn-cancel">Hủy</button>
             </div>
         </div>
@@ -140,15 +133,8 @@
 
 <script setup>
 import { ref, watch, nextTick } from 'vue';
-
-// --- Configuration ---
-// Get API Base URL from environment variables (Vite example)
-// Make sure to create a .env file in your project root with VITE_API_BASE_URL=http://your-api-url
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''; // Provide a fallback if needed
-
-if (!API_BASE_URL) {
-    console.warn("VITE_API_BASE_URL is not defined in your environment variables. API calls might fail.");
-}
+import { storeToRefs } from 'pinia'; // Import storeToRefs để giữ reactivity khi destructure
+import { useReferenceTypesStore } from '@/stores/referenceTypes'; // Đường dẫn tới store của bạn
 
 const props = defineProps({
     visible: Boolean,
@@ -160,8 +146,22 @@ const props = defineProps({
 
 const emit = defineEmits(['saveSchema', 'cancel']);
 
-// --- State ---
-const availableFieldTypes = ref([
+// --- Pinia Store Integration ---
+const referenceTypesStore = useReferenceTypesStore();
+// Sử dụng storeToRefs để lấy state và giữ reactivity.
+// Alias tên để giữ tính nhất quán với code cũ nếu muốn (ví dụ: types -> availableReferenceTypes)
+const {
+    typeNames: availableReferenceTypes,
+    //types: availableReferenceTypes, // Lấy 'types' từ store và đặt tên là 'availableReferenceTypes'
+    isLoading: isLoadingReferenceTypes, // Lấy 'isLoading' từ store và đặt tên là 'isLoadingReferenceTypes'
+    error: referenceTypesError, // Lấy 'error' từ store và đặt tên là 'referenceTypesError'
+    hasFetched // Có thể dùng cờ này để kiểm tra nếu cần, nhưng action fetchTypes nên tự xử lý
+} = storeToRefs(referenceTypesStore);
+// Lấy action fetchTypes từ store
+const { fetchTypes } = referenceTypesStore;
+
+// --- Local State (Trạng thái cục bộ của component) ---
+const availableFieldTypes = ref([ // Danh sách các loại trường cơ bản (không bao gồm reference ở đây nữa)
     { type: 'text', label: 'Chữ (Text)' },
     { type: 'number', label: 'Số (Number)' },
     { type: 'date', label: 'Ngày (Date)' },
@@ -169,85 +169,29 @@ const availableFieldTypes = ref([
     { type: 'boolean', label: 'Đúng/Sai (Checkbox)' },
     { type: 'email', label: 'Email' },
     { type: 'url', label: 'URL' },
-    { type: 'reference', label: 'Tham chiếu (Reference)' },
+    // 'reference' được xử lý riêng trong palette
 ]);
 
-// *** NEW: State for dynamic reference types ***
-const availableReferenceTypes = ref([]); // Initialize as empty
-const isLoadingReferenceTypes = ref(false);
-const referenceTypesError = ref(null);
+const builtSchemaTabs = ref([]); // Trạng thái chính của form đang xây dựng
+const activeTabIndex = ref(0); // Tab đang được chọn
 
-const builtSchemaTabs = ref([]);
-const activeTabIndex = ref(0);
-
-// Drag & Drop State
-const draggingFieldType = ref(null);
-const draggingTabIndex = ref(null);
-const draggingFieldKey = ref(null);
-const dragOverFieldKey = ref(null);
-
-// --- API Fetching ---
-const fetchAvailableReferenceTypes = async () => {
-    if (!API_BASE_URL) {
-        referenceTypesError.value = "API Base URL chưa được cấu hình.";
-        isLoadingReferenceTypes.value = false;
-        availableReferenceTypes.value = []; // Ensure it's empty
-        return;
-    }
-    // Optimization: Don't refetch if already loaded (unless forced refresh is needed)
-    if (availableReferenceTypes.value.length > 0 && !isLoadingReferenceTypes.value) {
-        console.log("Reference types already loaded.");
-        return;
-    }
-
-    isLoadingReferenceTypes.value = true;
-    referenceTypesError.value = null;
-    console.log("Fetching available reference types from:", `${API_BASE_URL}/api/listapi`);
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/listapi`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-
-        // Assuming the API returns an array of objects like [{ name: 'Customers', ... }, { name: 'Employees', ... }]
-        if (Array.isArray(data)) {
-            // Extract 'name' and filter out any null/undefined/empty strings
-            availableReferenceTypes.value = data.map(item => item.name).filter(name => name && typeof name === 'string' && name.trim() !== '');
-            console.log("Successfully fetched reference types:", availableReferenceTypes.value);
-            if (availableReferenceTypes.value.length === 0) {
-                 console.warn("API returned an empty list or list with invalid 'name' fields for reference types.");
-                 referenceTypesError.value = "API không trả về loại tham chiếu hợp lệ nào.";
-            }
-        } else {
-            console.error("API response is not an array:", data);
-            throw new Error("Dữ liệu API trả về không phải là một danh sách (array).");
-        }
-    } catch (error) {
-        console.error("Failed to fetch reference types:", error);
-        referenceTypesError.value = error.message || "Lỗi không xác định khi tải loại tham chiếu.";
-        availableReferenceTypes.value = []; // Clear on error
-    } finally {
-        isLoadingReferenceTypes.value = false;
-    }
-};
-
+// Drag & Drop State (Cục bộ)
+const draggingFieldType = ref(null); // Loại trường đang kéo từ palette
+const draggingTabIndex = ref(null); // Index tab nguồn khi kéo field
+const draggingFieldKey = ref(null); // Key của field đang kéo
+const dragOverFieldKey = ref(null); // Key của field đang bị kéo qua (để highlight)
 
 // --- Watchers ---
 watch(() => props.visible, (newVisible) => {
     if (newVisible) {
-        // Fetch reference types when modal becomes visible
-        fetchAvailableReferenceTypes(); // Trigger the fetch
+        // Gọi action fetchTypes từ Pinia store khi modal mở.
+        // Store sẽ tự quyết định có cần fetch lại hay không.
+        fetchTypes();
 
-        // --- Initialize Schema ---
+        // --- Initialize Schema (Logic giữ nguyên) ---
         let schemaToLoad;
-        try {
-            schemaToLoad = structuredClone(props.initialSchema || { tabs: [] });
-        } catch (e) {
-            console.warn("structuredClone failed, using JSON fallback for initial schema.");
-            schemaToLoad = JSON.parse(JSON.stringify(props.initialSchema || { tabs: [] }));
-        }
+        // Sử dụng JSON parse/stringify để deep clone đơn giản, tránh structuredClone nếu có vấn đề tương thích
+        schemaToLoad = JSON.parse(JSON.stringify(props.initialSchema || { tabs: [] }));
 
         if (!schemaToLoad || !Array.isArray(schemaToLoad.tabs)) {
             builtSchemaTabs.value = [{ id: `tab_${Date.now()}`, label: 'Tab 1', fields: {} }];
@@ -260,16 +204,15 @@ watch(() => props.visible, (newVisible) => {
                     for (const key in tab.fields) {
                         const field = tab.fields[key];
                         processedFields[key] = { ...field };
-                        if (field.type === 'reference') {
-                            // Keep existing referenceType for now. Validation happens on save.
-                            // Set to null if it doesn't exist in the original schema.
-                            processedFields[key].referenceType = field.referenceType || null;
-                            processedFields[key].value = field.value ?? getDefaultValue('reference');
-                        } else {
-                             processedFields[key].value = field.value ?? getDefaultValue(field.type);
-                        }
+                        // Đảm bảo các thuộc tính cơ bản tồn tại
                         processedFields[key].label = field.label || key;
                         processedFields[key].required = field.required || false;
+                        processedFields[key].value = field.value ?? getDefaultValue(field.type);
+                        // Xử lý riêng cho reference type
+                        if (field.type === 'reference') {
+                            // Giữ referenceType hiện có, validation sẽ kiểm tra khi lưu
+                            processedFields[key].referenceType = field.referenceType || null;
+                        }
                     }
                 }
                 return {
@@ -282,19 +225,17 @@ watch(() => props.visible, (newVisible) => {
         activeTabIndex.value = 0;
         console.log("Form builder initialized with schema:", builtSchemaTabs.value);
     } else {
-        // Reset state when closing
+        // Reset state cục bộ khi đóng modal
         builtSchemaTabs.value = [];
         activeTabIndex.value = 0;
         draggingFieldType.value = null;
         draggingTabIndex.value = null;
         draggingFieldKey.value = null;
         dragOverFieldKey.value = null;
-        // Keep fetched types cached, don't reset:
-        // availableReferenceTypes.value = [];
-        // referenceTypesError.value = null;
+        // Không cần reset state của Pinia store ở đây
         console.log("Form builder closed and reset.");
     }
-}, { immediate: true }); // Run immediately to fetch types if modal starts visible
+}, { immediate: true }); // Chạy ngay lập tức để fetch types nếu modal khởi tạo là visible
 
 // --- Helper Functions ---
 const isValueType = (type, typesArray) => typesArray.includes(type);
@@ -304,12 +245,12 @@ const getDefaultValue = (type) => {
         case 'number': return 0;
         case 'boolean': return false;
         case 'date': return '';
-        case 'reference': return null; // Default value for reference is null (no selection)
+        case 'reference': return null; // Giá trị mặc định cho reference là null
         default: return '';
     }
 };
 
-// --- Tab Management ---
+// --- Tab Management (Logic giữ nguyên) ---
 const addTab = () => {
     const newTabId = `tab_${Date.now()}`;
     builtSchemaTabs.value.push({
@@ -331,47 +272,58 @@ const removeTab = (tabIndex) => {
         builtSchemaTabs.value.splice(tabIndex, 1);
         // Adjust active tab index
         if (activeTabIndex.value === tabIndex) {
-            // If the active tab was deleted, move to the previous one or the first one
             activeTabIndex.value = Math.max(0, tabIndex - 1);
         } else if (activeTabIndex.value > tabIndex) {
-            // If a tab before the active one was deleted, shift the active index back
             activeTabIndex.value--;
         }
-        // Ensure activeTabIndex is valid if all tabs were somehow removed (shouldn't happen with the check above)
-        if (builtSchemaTabs.value.length === 0) {
-            activeTabIndex.value = -1; // Or 0 if we immediately add a default tab
-        } else if (activeTabIndex.value >= builtSchemaTabs.value.length) {
+        if (builtSchemaTabs.value.length > 0 && activeTabIndex.value >= builtSchemaTabs.value.length) {
              activeTabIndex.value = builtSchemaTabs.value.length - 1;
+        } else if (builtSchemaTabs.value.length === 0) {
+             activeTabIndex.value = -1; // Hoặc 0 nếu logic yêu cầu tạo tab mặc định
         }
-
         console.log(`Removed tab "${removedTabLabel}" at index:`, tabIndex);
     }
 };
 
-// --- Drag & Drop Handlers ---
+// --- Drag & Drop Handlers (Cập nhật kiểm tra loading cho reference) ---
 
 const handlePaletteDragStart = (event, fieldType) => {
-    // Prevent dragging reference type if still loading or no types available
-    if (fieldType === 'reference' && (isLoadingReferenceTypes.value || availableReferenceTypes.value.length === 0)) {
+    // Ngăn kéo 'reference' nếu đang loading (từ Pinia)
+    if (fieldType === 'reference' && isLoadingReferenceTypes.value) {
         event.preventDefault();
+        console.warn("Cannot drag reference type while loading.");
         return;
     }
+    // Ngăn kéo 'reference' nếu fetch lỗi hoặc không có type nào (từ Pinia)
+    // (Kiểm tra này có thể không cần thiết nếu palette item đã bị disabled, nhưng để chắc chắn)
+    if (fieldType === 'reference' && !isLoadingReferenceTypes.value && availableReferenceTypes.value.length === 0) {
+        event.preventDefault();
+        console.warn("Cannot drag reference type: No types available or fetch failed.");
+        alert("Không thể kéo trường Tham chiếu: Danh sách loại tham chiếu trống hoặc tải bị lỗi.");
+        return;
+    }
+
     draggingFieldType.value = fieldType;
     draggingTabIndex.value = null;
     draggingFieldKey.value = null;
     event.dataTransfer.effectAllowed = 'copy';
-    try { event.dataTransfer.setData('text/plain', fieldType); } catch(e) {}
+    try { event.dataTransfer.setData('text/plain', fieldType); } catch(e) { console.error("setData failed:", e)}
     console.log(`Dragging from palette: ${fieldType}`);
 };
 
 const handleCanvasDragOver = (event, tabIndex) => {
     event.preventDefault();
-    if (draggingFieldType.value) {
-        event.dataTransfer.dropEffect = 'copy';
-    } else if (draggingTabIndex.value !== null && draggingTabIndex.value === tabIndex) {
-        event.dataTransfer.dropEffect = 'move'; // Moving within the same tab
-    } else if (draggingTabIndex.value !== null && draggingTabIndex.value !== tabIndex) {
-        event.dataTransfer.dropEffect = 'copy'; // Moving to a different tab (treat as copy for now)
+    if (draggingFieldType.value) { // Kéo từ palette
+        // Kiểm tra nếu kéo 'reference' mà đang loading thì không cho drop
+        if (draggingFieldType.value === 'reference' && isLoadingReferenceTypes.value) {
+             event.dataTransfer.dropEffect = 'none';
+        } else {
+             event.dataTransfer.dropEffect = 'copy';
+        }
+    } else if (draggingTabIndex.value !== null && draggingTabIndex.value === tabIndex) { // Kéo trong cùng tab
+        event.dataTransfer.dropEffect = 'move';
+    } else if (draggingTabIndex.value !== null && draggingTabIndex.value !== tabIndex) { // Kéo sang tab khác
+        event.dataTransfer.dropEffect = 'move'; // Cho phép di chuyển giữa các tab
     } else {
         event.dataTransfer.dropEffect = 'none';
     }
@@ -379,35 +331,42 @@ const handleCanvasDragOver = (event, tabIndex) => {
 
 const handleCanvasDrop = (event, targetTabIndex) => {
     event.preventDefault();
-    const fieldType = draggingFieldType.value || event.dataTransfer.getData('text/plain');
-    console.log(`Dropped on tab index: ${targetTabIndex}. Type detected: ${fieldType}`);
+    const droppedFieldType = draggingFieldType.value; // Lấy từ state nếu kéo từ palette
+    const sourceTabIndex = draggingTabIndex.value; // Lấy từ state nếu kéo field
+    const sourceFieldKey = draggingFieldKey.value; // Lấy từ state nếu kéo field
 
-    // Handle Drop From Palette
-    if (fieldType && availableFieldTypes.value.some(f => f.type === fieldType)) {
-        // *** Prevent dropping reference if types haven't loaded or failed ***
-        if (fieldType === 'reference' && (isLoadingReferenceTypes.value || availableReferenceTypes.value.length === 0)) {
-             alert(`Không thể thêm trường Tham chiếu: ${isLoadingReferenceTypes.value ? 'Đang tải danh sách loại...' : 'Không có loại tham chiếu nào được tải.'}`);
-             draggingFieldType.value = null; // Reset dragging state
-             handleFieldDragEnd(); // Clean up other drag states
+    console.log(`Drop detected on tab index: ${targetTabIndex}. State:`, { droppedFieldType, sourceTabIndex, sourceFieldKey });
+
+    // --- Handle Drop From Palette ---
+    if (droppedFieldType) {
+        // Kiểm tra lại lần nữa phòng trường hợp state thay đổi nhanh
+        if (droppedFieldType === 'reference' && isLoadingReferenceTypes.value) {
+             alert(`Không thể thêm trường Tham chiếu: Đang tải danh sách loại...`);
+             handleFieldDragEnd(); // Reset state kéo thả
+             return;
+        }
+        if (droppedFieldType === 'reference' && availableReferenceTypes.value.length === 0) {
+             alert(`Không thể thêm trường Tham chiếu: Không có loại tham chiếu nào được tải.`);
+             handleFieldDragEnd();
              return;
         }
 
         const baseKey = `Trường mới`;
-        const newFieldKey = crypto.randomUUID(); // Generate a unique key
+        const newFieldKey = crypto.randomUUID(); // Unique key
 
         const newFieldSchema = {
             label: baseKey,
-            type: fieldType,
-            value: getDefaultValue(fieldType),
+            type: droppedFieldType,
+            value: getDefaultValue(droppedFieldType),
             required: false
         };
 
-        // *** Set referenceType to null initially, user must select ***
-        if (fieldType === 'reference') {
-            newFieldSchema.referenceType = null; // Default to null, forcing user selection
+        // Đặt referenceType là null ban đầu cho trường reference
+        if (droppedFieldType === 'reference') {
+            newFieldSchema.referenceType = null;
         }
 
-        // Ensure the target tab has a fields object
+        // Đảm bảo tab đích tồn tại và có object fields
         if (!builtSchemaTabs.value[targetTabIndex]) {
             console.error("Target tab index is invalid:", targetTabIndex);
             handleFieldDragEnd();
@@ -417,45 +376,38 @@ const handleCanvasDrop = (event, targetTabIndex) => {
              builtSchemaTabs.value[targetTabIndex].fields = {};
         }
 
-        // Add the new field
+        // Thêm field mới
         builtSchemaTabs.value[targetTabIndex].fields[newFieldKey] = newFieldSchema;
         console.log(`Added new field '${newFieldKey}' to tab ${targetTabIndex}:`, newFieldSchema);
-
-        // Optional: Scroll to the new field or focus it
-        // nextTick(() => { ... });
-
     }
-    // Handle Drop From Another Tab (Move Logic)
-    else if (draggingTabIndex.value !== null && draggingFieldKey.value && draggingTabIndex.value !== targetTabIndex) {
-        const sourceTab = builtSchemaTabs.value[draggingTabIndex.value];
+    // --- Handle Drop From Another Tab (Move) ---
+    else if (sourceTabIndex !== null && sourceFieldKey && sourceTabIndex !== targetTabIndex) {
+        const sourceTab = builtSchemaTabs.value[sourceTabIndex];
         const targetTab = builtSchemaTabs.value[targetTabIndex];
-        const fieldKeyToMove = draggingFieldKey.value;
 
-        if (sourceTab && targetTab && fieldKeyToMove && sourceTab.fields[fieldKeyToMove]) {
-             // Check for key collision in the target tab
-             if (targetTab.fields && targetTab.fields[fieldKeyToMove]) {
-                 alert(`Lỗi: Mã định danh (Key) "${fieldKeyToMove}" đã tồn tại trong tab đích "${targetTab.label}". Vui lòng đổi tên trường nguồn trước khi di chuyển.`);
+        if (sourceTab?.fields?.[sourceFieldKey] && targetTab) {
+             // Kiểm tra key trùng lặp ở tab đích
+             if (targetTab.fields && targetTab.fields[sourceFieldKey]) {
+                 alert(`Lỗi: Mã định danh (Key) "${sourceFieldKey}" đã tồn tại trong tab đích "${targetTab.label}". Vui lòng đổi tên trường nguồn trước khi di chuyển.`);
              } else {
-                 // Perform the move
-                 if (!targetTab.fields) { targetTab.fields = {}; } // Ensure target fields object exists
-                 targetTab.fields[fieldKeyToMove] = sourceTab.fields[fieldKeyToMove]; // Copy field data
-                 delete sourceTab.fields[fieldKeyToMove]; // Remove from source
-                 console.log(`Moved field '${fieldKeyToMove}' from tab ${draggingTabIndex.value} to ${targetTabIndex}`);
+                 // Thực hiện di chuyển
+                 if (!targetTab.fields) { targetTab.fields = {}; }
+                 targetTab.fields[sourceFieldKey] = sourceTab.fields[sourceFieldKey]; // Copy
+                 delete sourceTab.fields[sourceFieldKey]; // Delete from source
+                 console.log(`Moved field '${sourceFieldKey}' from tab ${sourceTabIndex} to ${targetTabIndex}`);
              }
         } else {
              console.warn("Could not move field between tabs. Invalid state or field not found.");
         }
     }
+    // --- Handle Drop for Reordering (Logic nằm trong handleFieldDrop) ---
+    // Trường hợp này không xử lý ở đây mà ở handleFieldDrop (khi thả lên field khác)
+
      else {
-        console.warn("Invalid drop operation on canvas. Dragging state:", {
-            draggingFieldType: draggingFieldType.value,
-            draggingTabIndex: draggingTabIndex.value,
-            draggingFieldKey: draggingFieldKey.value
-        });
+        console.warn("Invalid drop operation on canvas background or same tab background.");
     }
 
-    // Reset dragging state regardless of outcome
-    draggingFieldType.value = null;
+    // Reset dragging state sau khi thả
     handleFieldDragEnd();
 };
 
@@ -463,10 +415,10 @@ const handleCanvasDrop = (event, targetTabIndex) => {
 const handleFieldDragStart = (event, tabIndex, fieldKey) => {
     draggingTabIndex.value = tabIndex;
     draggingFieldKey.value = fieldKey;
-    draggingFieldType.value = null; // Not dragging from palette
+    draggingFieldType.value = null; // Đánh dấu không phải kéo từ palette
     event.dataTransfer.effectAllowed = 'move';
-    try { event.dataTransfer.setData('text/plain', fieldKey); } catch(e) {} // Set data for potential cross-tab drop
-    // Add class directly to the element being dragged for visual feedback
+    try { event.dataTransfer.setData('text/plain', fieldKey); } catch(e) {}
+    // Thêm class trực tiếp vào element đang kéo
     if (event.target.classList.contains('form-field-preview')) {
         event.target.classList.add('dragging-field');
     }
@@ -475,22 +427,25 @@ const handleFieldDragStart = (event, tabIndex, fieldKey) => {
 
 const handleFieldDragOver = (event, tabIndex, targetFieldKey) => {
     event.preventDefault();
-    // Allow dropping only if dragging within the same tab and not onto itself
+    // Chỉ cho phép thả nếu kéo trong cùng tab và không thả lên chính nó
     if (draggingTabIndex.value === tabIndex && draggingFieldKey.value && draggingFieldKey.value !== targetFieldKey) {
-        dragOverFieldKey.value = targetFieldKey; // Set state for visual feedback
+        dragOverFieldKey.value = targetFieldKey; // Đặt state để hiển thị visual feedback
         event.dataTransfer.dropEffect = 'move';
     } else {
-        dragOverFieldKey.value = null; // Reset visual feedback state
-        event.dataTransfer.dropEffect = 'none'; // Indicate invalid drop target
+        dragOverFieldKey.value = null; // Reset visual feedback
+        event.dataTransfer.dropEffect = 'none'; // Không cho phép thả
     }
 };
 
 const handleFieldDrop = (event, targetTabIndex, targetFieldKey) => {
     event.preventDefault();
-    console.log(`Drop field onto key: '${targetFieldKey}' in tab ${targetTabIndex}. Dragging key: '${draggingFieldKey.value}' from tab ${draggingTabIndex.value}`);
+    const sourceTabIndex = draggingTabIndex.value;
+    const sourceFieldKey = draggingFieldKey.value;
 
-    // Handle reordering within the same tab
-    if (draggingTabIndex.value === targetTabIndex && draggingFieldKey.value && draggingFieldKey.value !== targetFieldKey) {
+    console.log(`Drop field onto key: '${targetFieldKey}' in tab ${targetTabIndex}. Dragging key: '${sourceFieldKey}' from tab ${sourceTabIndex}`);
+
+    // --- Handle Reordering within the same tab ---
+    if (sourceTabIndex === targetTabIndex && sourceFieldKey && sourceFieldKey !== targetFieldKey) {
         const tabFields = builtSchemaTabs.value[targetTabIndex].fields;
         if (!tabFields) {
             console.error("Cannot reorder, target tab fields object is missing.");
@@ -499,25 +454,18 @@ const handleFieldDrop = (event, targetTabIndex, targetFieldKey) => {
         }
 
         const fieldKeys = Object.keys(tabFields);
-        const draggedIndex = fieldKeys.indexOf(draggingFieldKey.value);
+        const draggedIndex = fieldKeys.indexOf(sourceFieldKey);
         const targetIndex = fieldKeys.indexOf(targetFieldKey);
 
         if (draggedIndex > -1 && targetIndex > -1) {
-            // Create a new ordered object
             const newOrderedFields = {};
-            const items = Object.entries(tabFields); // [ [key1, schema1], [key2, schema2], ... ]
-
-            // Remove the dragged item
-            const [draggedItem] = items.splice(draggedIndex, 1);
-
-            // Insert the dragged item at the target position
-            items.splice(targetIndex, 0, draggedItem);
-
-            // Reconstruct the fields object from the ordered array
+            const items = Object.entries(tabFields); // [ [key1, schema1], ... ]
+            const [draggedItem] = items.splice(draggedIndex, 1); // Remove
+            items.splice(targetIndex, 0, draggedItem); // Insert at target
+            // Reconstruct object
             for (const [key, schema] of items) {
                 newOrderedFields[key] = schema;
             }
-
             builtSchemaTabs.value[targetTabIndex].fields = newOrderedFields;
             console.log("Reordered fields in tab. New order:", Object.keys(newOrderedFields));
         } else {
@@ -526,35 +474,33 @@ const handleFieldDrop = (event, targetTabIndex, targetFieldKey) => {
     } else {
          console.warn("Invalid field drop for reordering (different tab or dropping on self).");
     }
-    // Clean up drag state regardless of drop success
+    // Dọn dẹp state kéo thả
     handleFieldDragEnd();
 };
 
 const handleFieldDragEnd = (event) => {
-    // Clean up dragging class from the element that was dragged
+    // Dọn dẹp class 'dragging-field'
     const draggingElement = document.querySelector('.dragging-field');
     if (draggingElement) {
         draggingElement.classList.remove('dragging-field');
     }
-    // Reset all drag-related state variables
+    // Reset tất cả state liên quan đến kéo thả
     draggingTabIndex.value = null;
     draggingFieldKey.value = null;
     dragOverFieldKey.value = null;
-    draggingFieldType.value = null; // Ensure this is reset too
-    // console.log("Field drag ended."); // Optional log
+    draggingFieldType.value = null;
+    // console.log("Field drag ended.");
 };
 
 
-// --- Field Management ---
+// --- Field Management (Logic giữ nguyên) ---
 
 const removeField = (tabIndex, fieldKey) => {
     const tab = builtSchemaTabs.value[tabIndex];
-    if (tab?.fields && tab.fields[fieldKey]) {
+    if (tab?.fields?.[fieldKey]) {
         if (confirm(`Bạn có chắc muốn xóa trường "${tab.fields[fieldKey].label || fieldKey}"?`)) {
             delete tab.fields[fieldKey];
             console.log(`Removed field '${fieldKey}' from tab ${tabIndex}`);
-            // Force reactivity update if needed, though direct delete should be reactive
-            // builtSchemaTabs.value = [...builtSchemaTabs.value];
         }
     } else {
         console.warn(`Attempted to remove non-existent field '${fieldKey}' from tab ${tabIndex}`);
@@ -563,16 +509,14 @@ const removeField = (tabIndex, fieldKey) => {
 
 const updateFieldKey = (tabIndex, oldKey, newKeyInput) => {
     const newKey = newKeyInput.trim();
-    // Don't proceed if key is unchanged or empty
     if (newKey === oldKey || !newKey) return;
 
     const fields = builtSchemaTabs.value[tabIndex].fields;
-    if (!fields) return; // Should not happen if field exists
+    if (!fields) return;
 
-    // Check for key collision within the same tab
+    // Check key collision within the same tab
     if (fields.hasOwnProperty(newKey)) {
         alert(`Lỗi: Mã định danh (Key) "${newKey}" đã tồn tại trong tab này. Vui lòng chọn key khác.`);
-         // Reset the input value back to the old key visually
          nextTick(() => {
              const fieldElement = document.querySelector(`.form-field-preview[data-field-key="${oldKey}"]`);
              const inputElement = fieldElement?.querySelector('.field-key-input');
@@ -584,18 +528,12 @@ const updateFieldKey = (tabIndex, oldKey, newKeyInput) => {
     // Rebuild the fields object preserving order
     const newFields = {};
     for (const key in fields) {
-        if (key === oldKey) {
-            // Use the new key but keep the same field schema object
-            newFields[newKey] = fields[oldKey];
-        } else {
-            // Keep other keys and their schemas
-            newFields[key] = fields[key];
-        }
+        newFields[key === oldKey ? newKey : key] = fields[key];
     }
     builtSchemaTabs.value[tabIndex].fields = newFields;
     console.log(`Updated field key from '${oldKey}' to '${newKey}' in tab ${tabIndex}`);
 
-    // If the currently dragged field's key was changed, update the dragging state
+    // Update dragging state if the dragged field's key changed
      if (draggingTabIndex.value === tabIndex && draggingFieldKey.value === oldKey) {
          draggingFieldKey.value = newKey;
          console.log("Updated draggingFieldKey to:", newKey);
@@ -603,9 +541,10 @@ const updateFieldKey = (tabIndex, oldKey, newKeyInput) => {
 };
 
 
-// --- Modal Actions ---
+// --- Modal Actions (Cập nhật kiểm tra loading và validation reference) ---
 
 const handleSaveSchema = () => {
+    // Kiểm tra loading state từ Pinia
     if (isLoadingReferenceTypes.value) {
         alert("Đang tải dữ liệu tham chiếu, vui lòng đợi...");
         return;
@@ -613,143 +552,105 @@ const handleSaveSchema = () => {
 
     const finalSchema = { tabs: [] };
     let hasError = false;
-    const allKeysAcrossTabs = new Set(); // To check for unique keys across the entire form
-
-    console.log("Built Schema Tabs:", builtSchemaTabs.value); // Add this line to log builtSchemaTabs
+    const allKeysAcrossTabs = new Set();
 
     for (let i = 0; i < builtSchemaTabs.value.length; i++) {
         const tab = builtSchemaTabs.value[i];
         const finalTab = {
             id: tab.id,
-            label: tab.label?.trim() || '', // Trim label
+            label: tab.label?.trim() || '',
             fields: {}
         };
 
         // Validate Tab Label
         if (!finalTab.label) {
              alert(`Lỗi: Tab thứ ${i + 1} chưa được đặt tên.`);
-             hasError = true;
-             activeTabIndex.value = i; // Focus the tab with error
-             break;
+             hasError = true; activeTabIndex.value = i; break;
         }
 
-        const currentTabKeys = new Set(); // Keys within the current tab (for internal checks if needed)
+        const currentTabKeys = new Set();
 
         if (!tab.fields || typeof tab.fields !== 'object') {
-            console.warn(`Tab "${finalTab.label}" has no fields or invalid fields structure.`);
-            // Allow saving tabs with no fields, just add the empty tab structure
-            finalSchema.tabs.push(finalTab);
-            continue; // Move to the next tab
+            finalSchema.tabs.push(finalTab); // Add empty tab
+            continue;
         }
 
         for (const fieldKey in tab.fields) {
-            const key = fieldKey.trim(); // Use the actual key from the object
+            const key = fieldKey.trim();
             const fieldSchema = tab.fields[fieldKey];
 
-            // Validate Field Key
+            // Validate Field Key & Label
             if (!key) {
-                // This case should ideally be prevented by the key input logic, but double-check
                 alert(`Lỗi: Có một trường trong tab "${finalTab.label}" có Mã định danh (Key) rỗng.`);
-                hasError = true;
-                activeTabIndex.value = i; // Focus the tab
-                break;
+                hasError = true; activeTabIndex.value = i; break;
             }
             if (!fieldSchema.label || !fieldSchema.label.trim()) {
                 alert(`Lỗi: Trường "${key}" trong tab "${finalTab.label}" chưa có Nhãn hiển thị.`);
-                hasError = true;
-                activeTabIndex.value = i; // Focus the tab
-                break;
+                hasError = true; activeTabIndex.value = i; break;
             }
 
             // Validate Key Uniqueness Across All Tabs
             if (allKeysAcrossTabs.has(key)) {
-                alert(`Lỗi: Mã định danh (Key) "${key}" bị trùng lặp giữa các tab (đã tồn tại trong tab khác). Key phải là duy nhất trong toàn bộ form.`);
-                hasError = true;
-                activeTabIndex.value = i; // Focus the tab where the duplicate was found
-                break;
+                alert(`Lỗi: Mã định danh (Key) "${key}" bị trùng lặp giữa các tab. Key phải là duy nhất trong toàn bộ form.`);
+                hasError = true; activeTabIndex.value = i; break;
             }
             allKeysAcrossTabs.add(key);
-            currentTabKeys.add(key); // Add to current tab's keys set
+            currentTabKeys.add(key);
 
-            // Prepare final field schema for saving
+            // Prepare final field schema
             const finalFieldDefinition = {
                 label: fieldSchema.label.trim(),
                 type: fieldSchema.type,
                 required: fieldSchema.required || false,
-                // Include other potential properties like placeholder, description if they exist
                 ...(fieldSchema.placeholder && { placeholder: fieldSchema.placeholder }),
                 ...(fieldSchema.description && { description: fieldSchema.description }),
-                // Add value last, potentially converting it
             };
 
-            let finalValue = fieldSchema.value; // Start with the current value
+            let finalValue = fieldSchema.value;
 
             try {
-                // Type-specific processing and validation
+                // Type-specific processing
                 if (fieldSchema.type === 'number') {
-                    // Convert to number, allow null if empty/null input
                     finalValue = (fieldSchema.value === '' || fieldSchema.value === null || fieldSchema.value === undefined)
-                        ? null
-                        : parseFloat(fieldSchema.value);
-                    // If parsing failed but input wasn't empty/null, default to 0 or handle as error? Let's default to null.
+                        ? null : parseFloat(fieldSchema.value);
                     if (isNaN(finalValue) && !(fieldSchema.value === '' || fieldSchema.value === null || fieldSchema.value === undefined)) {
-                        finalValue = null; // Or maybe throw error?
-                        console.warn(`Could not parse number for key "${key}", saving as null.`);
+                        finalValue = null;
                     }
                 } else if (fieldSchema.type === 'boolean') {
-                    finalValue = Boolean(fieldSchema.value); // Ensure it's a boolean
+                    finalValue = Boolean(fieldSchema.value);
                 } else if (fieldSchema.type === 'reference') {
-                    // *** VALIDATE referenceType on save ***
+                    // *** VALIDATE referenceType using Pinia state ***
                     if (!fieldSchema.referenceType || !availableReferenceTypes.value.includes(fieldSchema.referenceType)) {
                          alert(`Lỗi: Trường "${key}" trong tab "${finalTab.label}" là loại 'reference' nhưng chưa chọn Loại tham chiếu hợp lệ từ danh sách.`);
-                         hasError = true;
-                         activeTabIndex.value = i; // Focus the tab
-                         break; // Stop processing this tab
+                         hasError = true; activeTabIndex.value = i; break;
                     }
-                    // Add referenceType to the saved definition
                     finalFieldDefinition.referenceType = fieldSchema.referenceType;
-                    // Value for reference is typically an ID or null, keep it as is
-                    finalValue = fieldSchema.value; // Usually null or a string/number ID
+                    finalValue = fieldSchema.value; // Keep value as is (usually null or ID)
                 }
-                // Add handling for other types like 'select' options if needed here
             } catch (e) {
                  console.error(`Error processing value for key "${key}":`, e);
-                 // Decide how to handle: error out, or save default? Let's save default.
                  finalValue = getDefaultValue(fieldSchema.type);
-                 console.warn(`Saving default value for key "${key}" due to processing error.`);
             }
 
-            // Assign the processed value
             finalFieldDefinition.value = finalValue;
-            // Add the processed field definition to the final tab's fields
             finalTab.fields[key] = finalFieldDefinition;
 
-        } // End loop through fields in a tab
-
-        if (hasError) break; // Stop processing tabs if an error occurred in the inner loop
-
-        // Add the fully processed tab to the final schema
+        } // End field loop
+        if (hasError) break; // Stop tab loop if error in fields
         finalSchema.tabs.push(finalTab);
+    } // End tab loop
 
-    } // End loop through tabs
-
-    // Final check: Ensure there's at least one tab if no errors occurred so far
+    // Final check
     if (!hasError && finalSchema.tabs.length === 0) {
          alert("Lỗi: Cấu trúc form phải có ít nhất một tab.");
          hasError = true;
     }
 
-    // Only emit if no errors were found
+    // Emit if valid
     if (!hasError) {
-        console.log("Saving built schema:", JSON.stringify(finalSchema, null, 2)); // Pretty print JSON
-        // Deep clone before emitting to prevent downstream mutations affecting the component state
-        let schemaToEmit;
-        try {
-            schemaToEmit = structuredClone(finalSchema);
-        } catch(e) {
-            console.warn("structuredClone failed before emitting, using JSON fallback.");
-            schemaToEmit = JSON.parse(JSON.stringify(finalSchema));
-        }
+        console.log("Saving built schema:", JSON.stringify(finalSchema, null, 2));
+        // Deep clone before emitting
+        let schemaToEmit = JSON.parse(JSON.stringify(finalSchema));
         emit('saveSchema', schemaToEmit);
     } else {
         console.log("Schema validation failed. Not saving.");
@@ -763,6 +664,7 @@ const handleCancel = () => {
 </script>
 
 <style scoped>
+/* Styles giữ nguyên như file gốc của bạn */
 /* Add style for API error message */
 .api-error-message {
     background-color: #f8d7da;
@@ -1003,5 +905,4 @@ textarea.field-value-input { resize: none; height: auto; min-height: 2.2em; line
 .btn-save:hover:not(:disabled) { background-color: #157347; }
 .btn-cancel { background-color: #6c757d; color: white; }
 .btn-cancel:hover { background-color: #5a6268; }
-
 </style>
