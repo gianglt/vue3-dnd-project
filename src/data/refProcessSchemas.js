@@ -232,22 +232,11 @@ export const getOrLoadFormSchema = async (schemaId) => {
         // 5. Xử lý kết quả parse
         if (fullSchemaData && fullSchemaData.formSchema && Array.isArray(fullSchemaData.formSchema.tabs)) {
             // Lưu toàn bộ object vào cache (bao gồm schemaId, color, formSchema)
-             try {
-                loadedSchemasCache[schemaId] = structuredClone(fullSchemaData);
-            } catch(e) {
-                 console.warn("[RefProcess] structuredClone failed when caching schema, using JSON fallback.");
-                 loadedSchemasCache[schemaId] = JSON.parse(JSON.stringify(fullSchemaData));
-            }
-
+            loadedSchemasCache[schemaId] = JSON.parse(JSON.stringify(fullSchemaData));
             console.log(`[RefProcess] Schema ${schemaId} loaded and cached.`);
             // Trả về chỉ phần formSchema { tabs: [...] }
             // Tạo bản sao sâu trước khi trả về
-             try {
-                return structuredClone(fullSchemaData.formSchema);
-            } catch(e) {
-                 console.warn("[RefProcess] structuredClone failed before returning loaded schema, using JSON fallback.");
-                 return JSON.parse(JSON.stringify(fullSchemaData.formSchema));
-            }
+            return JSON.parse(JSON.stringify(fullSchemaData.formSchema));
         } else {
             console.error(`[RefProcess] Failed to parse valid schema data (with tabs structure) from ${xmlFilePath}. Result:`, fullSchemaData);
             // Có thể cache kết quả lỗi (ví dụ: cache null) để tránh load lại liên tục nếu file lỗi

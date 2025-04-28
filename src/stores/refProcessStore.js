@@ -95,7 +95,7 @@ export const useProcessStore = defineStore('refProcess', {
             this.loadError = false;
             try {
                 // Giả sử loadPaletteData là async và cần thiết trước khi hiển thị
-                await loadPaletteData('/tab_templates/manifest.json');
+                await loadPaletteData('/ref_templates/manifest.json');
                 // Có thể thêm logic load trạng thái đã lưu ở đây nếu muốn
                 // this.loadStateFromStorage(); // Ví dụ
                 this.loadError = false;

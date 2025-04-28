@@ -3,5 +3,10 @@
     "schemaId": "schema_red",
     "filename": "red_shape.xml",
     "color": "#ff6b6b"
-  }
+  },
+  {
+    "schemaId": "schema_blue",
+    "filename": "blue_shape.xml",
+    "color": "#0000ff"
+  }  
 ]
