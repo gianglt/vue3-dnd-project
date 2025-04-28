@@ -1,10 +1,10 @@
 <template>
   <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/drawing">Bản vẽ </router-link> |
+    <router-link to="/">Home</router-link> | 
+    <router-link to="/drawing">Bản vẽ </router-link> | 
     <router-link to="/process">Quy trình</router-link> <!-- Liên kết mới --> | 
     <router-link to="/dynamicprocess">Quy trình Động</router-link> <!-- Liên kết mới --> |
-    <router-link to="/tabprocess">Quy trình Tab</router-link> <!-- Liên kết mới -->
+    <router-link to="/tabprocess">Quy trình Tab</router-link> <!-- Liên kết mới --> | 
     <router-link to="/refprocess">Quy trình Ref</router-link> <!-- Liên kết mới -->
   </nav>
   <router-view/>
